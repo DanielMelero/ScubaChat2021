@@ -1,5 +1,7 @@
 package src;
 
+import java.util.Scanner;
+
 /**
  * a simple CLI for testing
  * 
@@ -9,14 +11,31 @@ package src;
  *
  */
 
-public class SimpleUI {
+public class SimpleUI implements UI{
 	
-	// this class handles the input from the user as a separate thread
-	class ImputHandler extends Thread{
-		
-		public void run() {
-			
-		}
+	ApplicationLayer layer;
+	
+	public SimpleUI(ApplicationLayer layer) {
+		this.layer = layer;
+	}
+	
+	public SimpleUI() {
+		this(new ApplicationLayer());
+	}
+
+	public String getInput(String input) {
+		layer.sendMessage(input);
+		return input;
+	}
+	
+	public void showMessage(String msg) {
+		System.out.println(msg);
+	}
+	
+	public static void main(String[] args) {
+		SimpleUI ui = new SimpleUI();
+		InputHandler ih = new InputHandler(ui);
+		ih.start();
 	}
 
 }
