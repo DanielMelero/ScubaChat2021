@@ -23,6 +23,10 @@ public class SimpleUI {
 			this.layer = layer;
 		}
 		
+		public InputHandler() {
+			this(new ApplicationLayer());
+		}
+		
 		public void run() {
 			while(true) {
 				System.out.print("> ");
