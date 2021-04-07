@@ -23,8 +23,9 @@ public class SimpleUI implements UI{
 		this(new ApplicationLayer());
 	}
 
-	public void getInput(String input) {
+	public String getInput(String input) {
 		layer.sendMessage(input);
+		return input;
 	}
 	
 	public void showMessage(String msg) {

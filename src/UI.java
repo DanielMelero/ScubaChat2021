@@ -11,7 +11,7 @@ package src;
 public interface UI {
 	
 	// method for getting input from other classes
-	public void getInput(String input);
+	public String getInput(String input);
 	
 	// method for showing incoming messages
 	public void showMessage(String msg);
