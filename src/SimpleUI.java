@@ -11,29 +11,20 @@ import java.util.Scanner;
  *
  */
 
-public class SimpleUI {
+public class SimpleUI implements UI{
 	
-	// this class handles the input from the user as a separate thread
-	class InputHandler extends Thread{
-		Scanner sc;
-		ApplicationLayer layer;
-		
-		public InputHandler(ApplicationLayer layer) {
-			sc = new Scanner(System.in);
-			this.layer = layer;
-		}
-		
-		public InputHandler() {
-			this(new ApplicationLayer());
-		}
-		
-		public void run() {
-			while(true) {
-				System.out.print("> ");
-				String input = sc.nextLine();
-				layer.sendMessage(input);
-			}
-		}
+	ApplicationLayer layer;
+	
+	public SimpleUI(ApplicationLayer layer) {
+		this.layer = layer;
+	}
+	
+	public SimpleUI() {
+		this(new ApplicationLayer());
+	}
+
+	public void getInput(String input) {
+		layer.sendMessage(input);
 	}
 	
 	public void showMessage(String msg) {
@@ -41,7 +32,9 @@ public class SimpleUI {
 	}
 	
 	public static void main(String[] args) {
-		
+		SimpleUI ui = new SimpleUI();
+		InputHandler ih = new InputHandler(ui);
+		ih.start();
 	}
 
 }
