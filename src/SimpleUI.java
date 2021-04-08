@@ -20,7 +20,11 @@ public class SimpleUI implements UI{
 	}
 	
 	public SimpleUI() {
-		this(new ApplicationLayer());
+		
+	}
+	
+	public void setApplicationLayer(ApplicationLayer layer) {
+		this.layer = layer;
 	}
 
 	public String getInput(String input) {
@@ -28,7 +32,7 @@ public class SimpleUI implements UI{
 		return input;
 	}
 	
-	public void showMessage(String msg) {
+	public void showMessage(int sourceAdress, String msg) {
 		System.out.println(msg);
 	}
 	

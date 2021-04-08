@@ -11,12 +11,32 @@ package src;
 
 public class ApplicationLayer {
 	
+	private TransportLayer tl;
+	private UI ui;
+	
+	public ApplicationLayer(TransportLayer tl, UI ui) {
+		this.tl = tl;
+		this.ui = ui;
+	}
+	
+	public ApplicationLayer(UI ui) {
+		this.ui = ui;
+	}
+	
 	/**
-	 * method to get the message from others
+	 * method to set the transport layer for the application layer
+	 * @param tl the transport layer
+	 */
+	public void setTransportLayer(TransportLayer tl) {
+		this.tl = tl;
+	}
+	
+	/**
+	 * method to receive a message from others, transport layer can call this method
 	 * @return the message as a string
 	 */
-	public String getMessage() {
-		return null;
+	public void receiveMessage(int sourceAdress, String msg) {
+		ui.showMessage(sourceAdress, msg);
 	}
 	
 	/**
@@ -24,7 +44,11 @@ public class ApplicationLayer {
 	 * @param msg the message that should be sent as a String
 	 */
 	public void sendMessage(String msg) {
-		
+		try {
+			tl.sendMessage(msg);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }
