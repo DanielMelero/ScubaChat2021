@@ -44,7 +44,7 @@ public class Packet {
         this.hasNext = hasNext;
         this.sequenceNumber = sequenceNumber;
         this.offset = offset;
-        this.data = data;
+        this.data = data.replace(Character.toString((char) 0), "");
 
         //generate a checksum if there was none
         if (checksum == null) {
@@ -76,7 +76,9 @@ public class Packet {
         this.offset = pkt[1] & 7;
         this.data = "";
         for (int i = 2; i < pkt.length; i++) {
-            this.data += Character.toString((char) pkt[i]);
+            if (pkt[i] != 0) {
+                this.data += Character.toString((char) pkt[i]);
+            }
         }
 
         // check if the checksum is correct (no bit errors in packet)

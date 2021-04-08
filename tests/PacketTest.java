@@ -118,7 +118,46 @@ public class PacketTest {
     }
 
     @Test
-    public void bitErrorTest() {
-        //TODO: implement multiple tests for 1, 2, 3 and 4 bits changed in packet
+    public void oneBitErrorTest() {
+        int[] pkt = simulateOneBitError(expectedPacket);
+        Exception checksumExceptionGivenIntArray = assertThrows(Exception.class, () -> 
+            {new Packet(pkt);});
+        assertTrue(checksumExceptionGivenIntArray.getMessage().contains("checksum"));
+    }
+
+    @Test
+    public void twoBitErrorTest() {
+        int[] pkt = simulateOneBitError(simulateOneBitError(expectedPacket));
+        Exception checksumExceptionGivenIntArray = assertThrows(Exception.class, () -> 
+            {new Packet(pkt);});
+        assertTrue(checksumExceptionGivenIntArray.getMessage().contains("checksum"));
+    }
+
+    @Test
+    public void threeBitErrorTest() {
+        int[] pkt = simulateOneBitError(simulateOneBitError(simulateOneBitError(expectedPacket)));
+        Exception checksumExceptionGivenIntArray = assertThrows(Exception.class, () -> 
+            {new Packet(pkt);});
+        assertTrue(checksumExceptionGivenIntArray.getMessage().contains("checksum"));
+    }
+
+    @Test
+    public void fourBitErrorTest() {
+        int[] pkt = simulateOneBitError(simulateOneBitError(simulateOneBitError(simulateOneBitError(expectedPacket))));
+        Exception checksumExceptionGivenIntArray = assertThrows(Exception.class, () -> 
+            {new Packet(pkt);});
+        assertTrue(checksumExceptionGivenIntArray.getMessage().contains("checksum"));
+    }
+
+    public int[] simulateOneBitError(int[] array) {
+        int selectedByte = rand.nextInt(array.length);
+        int selectedBit = rand.nextInt(8);
+        int[] res = Arrays.copyOf(array, array.length);
+        if (((res[selectedByte] >>> selectedBit) & 1) == 1) {
+            res[selectedByte] -= Math.pow(2, selectedBit);
+        } else {
+            res[selectedByte] += Math.pow(2, selectedBit);
+        }
+        return res;
     }
 }

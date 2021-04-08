@@ -153,12 +153,12 @@ public class TransportLayer {
      * 
      * @ensure msg respect max number of bytes
      */
-    private Packet[] createPackets(String msg) throws Exception {
+    public Packet[] createPackets(String msg) throws Exception {
         //check is message respects its maximum size
-        if (msg.getBytes().length > MAX_BYTES_PER_MESSAGE) throw new Exception("message is too long");
+        if (msg.length() > MAX_BYTES_PER_MESSAGE) throw new Exception("message is too long");
         
         //divide into the necessary number of packets
-        String[] substrings = new String[(int)Math.ceil(msg.length()/MAX_MSG_BYTES_PER_PKT)];
+        String[] substrings = new String[(int)Math.ceil(msg.length()/(double)MAX_MSG_BYTES_PER_PKT)];
 
         //fill message divisions with the maximum number of bytes
         for (int i = 0; i < substrings.length - 1; i++) {
@@ -178,7 +178,7 @@ public class TransportLayer {
         int sequenceNumber = 0; //TODO: figure out how to work with sequence numbers (8 slots)
         Packet[] pkts = new Packet[substrings.length];
         for (int i = 0; i < pkts.length; i++) {
-            boolean hasNext = i == pkts.length - 1;
+            boolean hasNext = (i != pkts.length - 1);
             pkts[i] = new Packet(this.ipAddress, hasNext, null, sequenceNumber, i, substrings[i]);
             sequenceNumber++;
         }
@@ -192,7 +192,7 @@ public class TransportLayer {
      * @param lastPacket last packet received
      * @return message
      */
-    private String buildMessage(Packet lastPacket) {
+    public String buildMessage(Packet lastPacket) {
         //compute the length of the message
         int length = 0;
         int[] lp = lastPacket.toIntArray();
@@ -221,7 +221,7 @@ public class TransportLayer {
      * @param lastPacket hasNext is false
      * @return
      */
-    private boolean missingPackets(Packet lastPacket) {
+    public boolean missingPackets(Packet lastPacket) {
         //check if last packet is missing
         if (lastPacket == null) return true;
 
