@@ -27,13 +27,12 @@ public class TransportLayer {
     /**
      * Create Transport Layer instance with a given Application Layer
      * 
-     * @param aplicationLayer Application Layer
      */
-    public TransportLayer(ApplicationLayer aplicationLayer) {
+    public TransportLayer() {
         //TODO: create Network layer instance instead
         this.ipAddress = rand.nextInt(256);
 
-        this.applicationLayer = aplicationLayer;
+        this.applicationLayer = new ApplicationLayer(this);
     }
 
     /**
@@ -42,9 +41,9 @@ public class TransportLayer {
      * @param aplicationLayer Application Layer
      * @param ipAddress Network Layer
      */
-    public TransportLayer(ApplicationLayer aplicationLayer, int ipAddress) {
-        this.applicationLayer = aplicationLayer;
+    public TransportLayer(int ipAddress) {
         this.ipAddress = ipAddress;
+        this.applicationLayer = new ApplicationLayer(this);
     }
 
     /**
@@ -142,7 +141,7 @@ public class TransportLayer {
      * @param msg message
      */
     private void giveToApplicationLayer (int sourceAddress, String msg) {
-        //TODO: this.applicationLayer.receivedMessage(sourceAddress, msg);
+        this.applicationLayer.receiveMessage(sourceAddress, msg);
     }
 
     /**
