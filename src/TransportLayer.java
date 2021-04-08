@@ -1,6 +1,8 @@
 package src;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
 
 /**
  * Transport Layer Mechanism
@@ -12,14 +14,38 @@ import java.util.ArrayList;
  */
 public class TransportLayer {
     static final int MAX_BYTES_PER_MESSAGE = 240;
+    static final int MAX_MSG_BYTES_PER_PKT = 30;
 
-    //TODO:have a fixed id
+    private Random rand = new Random();
 
-    ArrayList<Packet> packetBuffer = new ArrayList<>();
-    ArrayList<Integer> sourceAddressBuffer = new ArrayList<>();
-    //TODO: Hash map | source -> buffer
+    private int ipAddress;
+    private ApplicationLayer applicationLayer;
 
-    //TODO: make a builder (initiate id)
+    private HashMap<Integer, ArrayList<Packet>> bufferMap = new HashMap<>();
+    private HashMap<Integer, Packet> waitingForMissingPackets = new HashMap<>();
+
+    /**
+     * Create Transport Layer instance with a given Application Layer
+     * 
+     * @param aplicationLayer Application Layer
+     */
+    public TransportLayer(ApplicationLayer aplicationLayer) {
+        //TODO: create Network layer instance instead
+        this.ipAddress = rand.nextInt(256);
+
+        this.applicationLayer = aplicationLayer;
+    }
+
+    /**
+     * Create Transport Layer instance with a given Application Layer and a given Network Layer
+     * 
+     * @param aplicationLayer Application Layer
+     * @param ipAddress Network Layer
+     */
+    public TransportLayer(ApplicationLayer aplicationLayer, int ipAddress) {
+        this.applicationLayer = aplicationLayer;
+        this.ipAddress = ipAddress;
+    }
 
     /**
      * Create necessary packet(s) and send everything 
@@ -40,10 +66,43 @@ public class TransportLayer {
      * @param pkt received packet
      */
     public void receivedPacket(Packet pkt) {
+        int src = pkt.getSourceAddress();
         if (pkt.getHasNext()) {
-            //TODO: add to correspondent buffer
+            //packet indicate that more packets are following
+            if(!bufferMap.containsKey(src)){
+                //add new buffer for the source of this packet
+                ArrayList<Packet> buf = new ArrayList<>();
+                buf.add(pkt);
+                bufferMap.put(src, buf);
+                waitingForMissingPackets.put(src, null);
+            } else if (waitingForMissingPackets.get(src) != null &&
+                        !missingPackets(waitingForMissingPackets.get(src))) {
+                //this packet was missing in the buffer and now message can be reassembled
+                reassemblePackets(waitingForMissingPackets.get(src));
+            } else {
+                //packet stored in buffer as last packet has not arrive or there are missing packets;
+                bufferMap.get(src).add(pkt);
+            }
         } else {
-            //TODO: build message, send to Application and clear buffer
+            if (bufferMap.containsKey(src)) {
+                if (missingPackets(pkt)) {
+                    //there are missing packets on the buffer
+                    waitingForMissingPackets.put(src, pkt);
+                } else {
+                    //last packet of a series of packets ready to be reassemble
+                    reassemblePackets(pkt);
+                }
+            } else {
+                if (missingPackets(pkt)) {
+                    //there are missing packets but the buffer did not exist yet
+                    bufferMap.put(src, new ArrayList<>());
+                    waitingForMissingPackets.put(src, pkt);
+                } else {
+                    //single packet and no buffer
+                    giveToApplicationLayer(pkt.getSourceAddress(), pkt.getData());
+                }
+            }
+            
         }
     }
 
@@ -55,6 +114,35 @@ public class TransportLayer {
      */
     public void receivedPacket(int[] pkt) throws Exception {
         receivedPacket(new Packet(pkt));
+    }
+
+    /**
+     * reassemble the packets, give the message to the application layer and clear the buffer
+     * 
+     * @param lastPacket
+     */
+    private void reassemblePackets (Packet lastPacket) {
+        int src = lastPacket.getSourceAddress();
+
+        //reassemble the packets
+        String msg = buildMessage(lastPacket);
+
+        //give the message to the application layer
+        giveToApplicationLayer(src, msg);
+
+        //clear the buffer
+        bufferMap.get(src).clear();
+        waitingForMissingPackets.put(src, null);
+    }
+
+    /**
+     * give a received message with its source address to the application layer
+     * 
+     * @param sourceAddress source address
+     * @param msg message
+     */
+    private void giveToApplicationLayer (int sourceAddress, String msg) {
+        //TODO: this.applicationLayer.receivedMessage(sourceAddress, msg);
     }
 
     /**
@@ -70,11 +158,33 @@ public class TransportLayer {
         //check is message respects its maximum size
         if (msg.getBytes().length > MAX_BYTES_PER_MESSAGE) throw new Exception("message is too long");
         
-        //TODO: get the number of packets needed and divide msg
+        //divide into the necessary number of packets
+        String[] substrings = new String[(int)Math.ceil(msg.length()/MAX_MSG_BYTES_PER_PKT)];
 
-        //TODO: for each packet create a Packet class
+        //fill message divisions with the maximum number of bytes
+        for (int i = 0; i < substrings.length - 1; i++) {
+            int x = i * MAX_MSG_BYTES_PER_PKT;
+            substrings[i] = msg.substring(x, x + MAX_MSG_BYTES_PER_PKT);
+        }
         
-        return null;
+        //fill last part of the message until max bytes are reached
+        int index = (int)Math.floor(msg.length()/MAX_MSG_BYTES_PER_PKT);
+        substrings[substrings.length - 1] = msg.substring(index * 30, msg.length());
+        while (substrings[substrings.length - 1].length() < MAX_MSG_BYTES_PER_PKT) {
+            substrings[substrings.length - 1] += Character.toString((char) 0);
+        }
+
+        
+        // for each msg create a Packet class
+        int sequenceNumber = 0; //TODO: figure out how to work with sequence numbers (8 slots)
+        Packet[] pkts = new Packet[substrings.length];
+        for (int i = 0; i < pkts.length; i++) {
+            boolean hasNext = i == pkts.length - 1;
+            pkts[i] = new Packet(this.ipAddress, hasNext, null, sequenceNumber, i, substrings[i]);
+            sequenceNumber++;
+        }
+        
+        return pkts;
     }
 
     /**
@@ -82,17 +192,27 @@ public class TransportLayer {
      * 
      * @param lastPacket last packet received
      * @return message
-     * @throws Exception
      */
-    private String buildMessage(Packet lastPacket) throws Exception {
-        //check if last packet is actually the last packet
-        if (lastPacket.getHasNext()) throw new Exception("invalid last packet");
-        
-        //TODO: compute string length, create char array fill it and covert it to String
-            //char[] chs = new char[length];
-            //String message = new String(chs);
+    private String buildMessage(Packet lastPacket) {
+        //compute the length of the message
+        int length = 0;
+        int[] lp = lastPacket.toIntArray();
+        while (lp[length+2] != 0) {
+            length++;
+        }
+        char[] chars = new char[lastPacket.getOffset()*30 + length];
 
-        return "";
+        //fill the message with buffer packets
+        for (Packet p : bufferMap.get(lastPacket.getSourceAddress())) {
+            char[] c = p.getData().toCharArray();
+            System.arraycopy(c, 0, chars, p.getOffset() * 30, 30);
+        }
+
+        //fill message with last packet
+        System.arraycopy(lastPacket.getData().toCharArray(), 0, chars, lastPacket.getOffset() * 30, length);
+
+        //return message as a string
+        return new String(chars);
     }
 
     /**
@@ -100,16 +220,31 @@ public class TransportLayer {
      * 
      * @param buffer packets stored until lastPacket
      * @param lastPacket hasNext is false
-     * @return 
-     * @throws Exception
-     * 
-     * @ensure last packet is last packet
+     * @return
      */
-    private boolean missingPackets(Packet[] buffer, Packet lastPacket) throws Exception {
-        //check if last packet is actually the last packet
-        if (lastPacket.getHasNext()) throw new Exception("invalid last packet");
+    private boolean missingPackets(Packet lastPacket) {
+        //check if last packet is missing
+        if (lastPacket == null) return true;
 
-        return buffer.length != lastPacket.getOffset();
+        //check if a packet is missing in the buffer
+        int len;
+        int src = lastPacket.getSourceAddress();
+        if (bufferMap.containsKey(src)) {
+            len = bufferMap.get(src).size();
+        } else {
+            len = 0;
+        }
+        return len != lastPacket.getOffset();
+    }
+
+    /**
+     * get buffer corresponding to the given address
+     * 
+     * @param sourceAddress source address
+     * @return
+     */
+    public Packet[] getBuffer(int sourceAddress) {
+        return (Packet[]) bufferMap.get(sourceAddress).toArray();
     }
 
 }
