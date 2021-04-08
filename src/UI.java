@@ -14,6 +14,6 @@ public interface UI {
 	public String getInput(String input);
 	
 	// method for showing incoming messages
-	public void showMessage(int sourceAdress, String msg);
+	public void showMessage(int sourceAddress, String msg);
 
 }

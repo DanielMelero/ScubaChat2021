@@ -32,7 +32,7 @@ public class SimpleUI implements UI{
 		return input;
 	}
 	
-	public void showMessage(int sourceAdress, String msg) {
+	public void showMessage(int sourceAddress, String msg) {
 		System.out.println(msg);
 	}
 	

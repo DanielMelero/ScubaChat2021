@@ -31,7 +31,7 @@ class UITest {
 	void visualTest() {
 		ih.start();
 		for (int i = 0; i < 10; i++) {
-			ui.showMessage("test message");
+			ui.showMessage(0, "test message");
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {

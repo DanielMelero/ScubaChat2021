@@ -20,7 +20,6 @@ public class InputHandler extends Thread {
 
 	public void run() {
 		while (true) {
-			System.out.print("> ");
 			String input = sc.nextLine();
 			ui.getInput(input);
 		}
