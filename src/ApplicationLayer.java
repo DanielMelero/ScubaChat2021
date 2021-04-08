@@ -23,6 +23,11 @@ public class ApplicationLayer {
 		this.ui = ui;
 	}
 	
+	public ApplicationLayer(TransportLayer tl) {
+		this.tl = tl;
+		ui = new SimpleUI(this);
+	}
+	
 	/**
 	 * method to set the transport layer for the application layer
 	 * @param tl the transport layer
