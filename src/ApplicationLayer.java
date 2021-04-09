@@ -47,13 +47,12 @@ public class ApplicationLayer {
 	/**
 	 * method to send the message, invokes a function in the lower layer
 	 * @param msg the message that should be sent as a String
+	 * @throws Exception 
 	 */
-	public void sendMessage(String msg) {
-		try {
-			tl.sendMessage(msg);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	public void sendMessage(String msg) throws Exception {
+
+		tl.sendMessage(msg);
+
 	}
 
 }
