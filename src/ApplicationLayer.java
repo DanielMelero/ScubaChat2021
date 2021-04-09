@@ -26,7 +26,7 @@ public class ApplicationLayer {
 	
 	public ApplicationLayer(TransportLayer tl) {
 		this.tl = tl;
-		ui = new BetterUI();
+		ui = new BetterUI(this);
 		Thread t = new Thread(ui);
 		t.start();
 	}
