@@ -13,7 +13,7 @@ public class Network {
 	
 	public Network() {
 		
-		this.transportlayer = new TransportLayer();
+		//this.transportlayer = new TransportLayer();
 		this.protocol = new MyProtocol("netsys.ewi.utwente.nl", 8954, 4100);
 	}
 	

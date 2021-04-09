@@ -19,7 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * code in any way you like!
  */
 
-public class MyProtocolTest {
+public class SampleProtocol {
 	public String inputMessage = "";
 	Message msg;
 	Set<Integer> userSet = new HashSet<Integer>();
@@ -35,7 +35,7 @@ public class MyProtocolTest {
 	private BlockingQueue<Message> receivedQueue;
 	private BlockingQueue<Message> sendingQueue;
 
-	public MyProtocolTest(String server_ip, int server_port, int frequency) throws InterruptedException {
+	public SampleProtocol(String server_ip, int server_port, int frequency) throws InterruptedException {
 		receivedQueue = new LinkedBlockingQueue<Message>();
 		sendingQueue = new LinkedBlockingQueue<Message>();
 
@@ -120,7 +120,7 @@ public class MyProtocolTest {
 			frequency = Integer.parseInt(args[0]);
 		}
 		try {
-			new MyProtocolTest(SERVER_IP, SERVER_PORT, frequency);
+			new SampleProtocol(SERVER_IP, SERVER_PORT, frequency);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -2,6 +2,7 @@
 package src;
 
 import client.*;
+//import protocol.TransportLayer;
 
 import java.nio.ByteBuffer;
 import java.io.Console;
@@ -18,7 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class MyProtocol{
 	
 	
-	
+	private TransportLayer transportlayer;
 	 private static int userID = 0;
     // The host to connect to. Set this to localhost when using the audio interface tool.
     private static String SERVER_IP = "netsys.ewi.utwente.nl"; //"127.0.0.1";
@@ -31,12 +32,14 @@ public class MyProtocol{
     private BlockingQueue<Message> receivedQueue;
     private BlockingQueue<Message> sendingQueue;
 
-    public String input;
+    String input;
+   
     
     public MyProtocol(String server_ip, int server_port, int frequency){
         receivedQueue = new LinkedBlockingQueue<Message>();
         sendingQueue = new LinkedBlockingQueue<Message>();
         
+        this.transportlayer = new TransportLayer(this);
         this.network = new Network();
 
         new Client(SERVER_IP, SERVER_PORT, frequency, receivedQueue, sendingQueue); // Give the client the Queues to use
@@ -44,30 +47,45 @@ public class MyProtocol{
         new receiveThread(receivedQueue).start(); // Start thread to handle received messages!
 
         // handle sending from stdin from this thread.
-        try{
-        	 Scanner console = new Scanner(System.in);
-          
-           while(true){
-                input = console.nextLine(); // read input
-                byte[] inputBytes = input.getBytes(); // get bytes from input
-                ByteBuffer toSend = ByteBuffer.allocate(inputBytes.length); // make a new byte buffer with the length of the input string
-                toSend.put( inputBytes, 0, inputBytes.length ); // copy the input string into the byte buffer.                   
-                Message msg;
-                if( (input.length()) > 2 ){
-                    msg = new Message(MessageType.DATA, toSend);
-                } else {
-                    msg = new Message(MessageType.DATA_SHORT, toSend);
-                }
-                sendingQueue.put(msg);
-            }
-        } catch (InterruptedException e){
-            System.exit(2);
-        }      
+        
+       
+     
+        Scanner console = new Scanner(System.in);
+        
+         while(true){
+		    input = console.nextLine(); 
+  
+		    send(input);
+		    
+         
+      }    
+       
+    }
+    
+    
+    public void send(String input) {
+    	
+        byte[] inputBytes = input.getBytes(); // get bytes from input
+        ByteBuffer toSend = ByteBuffer.allocate(inputBytes.length); // make a new byte buffer with the length of the input string
+        toSend.put( inputBytes, 0, inputBytes.length ); // copy the input string into the byte buffer.                   
+        Message msg;
+        if( (input.length()) > 2 ){
+            msg = new Message(MessageType.DATA, toSend);
+        } else {
+            msg = new Message(MessageType.DATA_SHORT, toSend);
+        }
+        try {
+			sendingQueue.put(msg);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+    	
+    	
     }
     
 
-
     public static void main(String args[]) {
+
         if(args.length > 0){
         	userID = Integer.parseInt(args[1]);
             frequency = Integer.parseInt(args[0]);
@@ -100,6 +118,12 @@ public class MyProtocol{
                     } else if (m.getType() == MessageType.FREE){ // The channel is no longer busy (no nodes are sending within our detection range)
                         System.out.println("FREE");
                     } else if (m.getType() == MessageType.DATA){ // We received a data frame!
+                    	
+                    	try {
+							transportlayer.receivedPacket(m.getData());
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
                     
                        // System.out.print("DATA: ");
                         //printByteBuffer( m.getData(), m.getData().capacity() ); //Just print the data
