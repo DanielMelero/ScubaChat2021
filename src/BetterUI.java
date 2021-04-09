@@ -142,7 +142,7 @@ public class BetterUI implements UI, Runnable {
 	public void inputMode() {
 		// set inputMode boolean to true and clear console if possible
 		inputMode = true;
-		clearConsole();
+		//clearConsole();
 
 		// store last shown message -> used in later check for missed messages
 		nextMessage = current;
@@ -198,7 +198,7 @@ public class BetterUI implements UI, Runnable {
 						al.sendMessage(lastInput);
 						break;
 					} catch (Exception e) {
-						System.out.println(e.getMessage());
+						System.out.println("Error:" + e.getMessage());
 						error = true;
 						break;
 					}
@@ -232,8 +232,7 @@ public class BetterUI implements UI, Runnable {
 			try {
 				Thread.sleep(100);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.out.println("Error:" + e.getMessage());
 			}
 			ui.showMessage(i, "test message");
 		}
