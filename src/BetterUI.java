@@ -142,7 +142,7 @@ public class BetterUI implements UI, Runnable {
 	public void inputMode() {
 		// set inputMode boolean to true and clear console if possible
 		inputMode = true;
-		clearConsole();
+		//clearConsole();
 
 		// store last shown message -> used in later check for missed messages
 		nextMessage = current;
