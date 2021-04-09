@@ -219,10 +219,12 @@ public class TransportLayer {
         }
         char[] chars = new char[lastPacket.getOffset()*30 + length];
 
-        //fill the message with buffer packets
-        for (Packet p : bufferMap.get(lastPacket.getSourceAddress())) {
-            char[] c = p.getData().toCharArray();
-            System.arraycopy(c, 0, chars, p.getOffset() * 30, 30);
+        //fill the message with buffer packets if buffer exists
+        if (bufferMap.containsKey(lastPacket.getSourceAddress())) {
+            for (Packet p : bufferMap.get(lastPacket.getSourceAddress())) {
+                char[] c = p.getData().toCharArray();
+                System.arraycopy(c, 0, chars, p.getOffset() * 30, 30);
+            }
         }
 
         //fill message with last packet
