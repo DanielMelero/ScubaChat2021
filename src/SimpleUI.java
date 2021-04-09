@@ -28,7 +28,12 @@ public class SimpleUI implements UI{
 	}
 
 	public String getInput(String input) {
-		//layer.sendMessage(input);
+		try {
+			layer.sendMessage(input);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return input;
 	}
 	
