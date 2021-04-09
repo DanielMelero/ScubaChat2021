@@ -183,26 +183,19 @@ public class Packet {
      */
     public ByteBuffer toByteBuffer() {
         int[] array = this.toIntArray();
-        ByteBuffer buffer = ByteBuffer.allocateDirect(array.length);
-        buffer.order(ByteOrder.nativeOrder());
-        this.fillByteBuffer(buffer, array);
+        
+        // get bytes from input
+		byte[] inputBytes = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            inputBytes[i] = (byte) array[i];
+        }
 
-        return buffer;
-    }
-
-    /**
-     * fill a given byte buffer with an int array
-     * 
-     * @param buffer byte buffer
-     * @param array data
-     */
-    private void fillByteBuffer(ByteBuffer buffer, int[] array) {
-        //created IntBuffer starts only from the ByteBuffer's relative position
-        //if you plan to reuse this IntBuffer, be mindful of its position
-        IntBuffer b = buffer.asIntBuffer();
-
-        //position of this IntBuffer changes by +data.length;
-        b.put(array);
+        // make a new byte buffer with the length of the
+		// input string
+		ByteBuffer toSend = ByteBuffer.allocate(inputBytes.length); 
+		toSend.put(inputBytes, 0, inputBytes.length);
+        
+        return toSend;
     }
 
     /**
