@@ -172,6 +172,7 @@ public class BetterUI implements UI, Runnable {
 
 			// if menu option is detected
 			// TODO: add more options and make exit work
+			
 			if (lastInput.length() == 1) {
 				switch (lastInput.charAt(0)) {
 
@@ -196,7 +197,7 @@ public class BetterUI implements UI, Runnable {
 						break;
 					} catch (Exception e) {
 						System.out.println("message too long, try again");
-						continue;
+						break;
 					}
 				}
 				System.out.println("message sent");
