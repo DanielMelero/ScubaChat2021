@@ -198,7 +198,7 @@ public class BetterUI implements UI, Runnable {
 						al.sendMessage(lastInput);
 						break;
 					} catch (Exception e) {
-						System.out.println("message too long, try again");
+						System.out.println(e.getMessage());
 						error = true;
 						break;
 					}
