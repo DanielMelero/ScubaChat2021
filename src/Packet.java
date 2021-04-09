@@ -1,5 +1,9 @@
 package src;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+
 /**
  * Packet class with all information the packet have
  * 
@@ -170,6 +174,35 @@ public class Packet {
         }
 
         return pkt;
+    }
+
+    /**
+     * transform this packet class to a byte buffer
+     * 
+     * @return byte buffer
+     */
+    public ByteBuffer toByteBuffer() {
+        int[] array = this.toIntArray();
+        ByteBuffer buffer = ByteBuffer.allocateDirect(array.length);
+        buffer.order(ByteOrder.nativeOrder());
+        this.fillByteBuffer(buffer, array);
+
+        return buffer;
+    }
+
+    /**
+     * fill a given byte buffer with an int array
+     * 
+     * @param buffer byte buffer
+     * @param array data
+     */
+    private void fillByteBuffer(ByteBuffer buffer, int[] array) {
+        //created IntBuffer starts only from the ByteBuffer's relative position
+        //if you plan to reuse this IntBuffer, be mindful of its position
+        IntBuffer b = buffer.asIntBuffer();
+
+        //position of this IntBuffer changes by +data.length;
+        b.put(array);
     }
 
     /**

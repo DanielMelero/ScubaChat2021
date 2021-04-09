@@ -1,7 +1,6 @@
 package tests;
 
-import src.TransportLayer;
-import src.Packet;
+import src.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,7 +22,7 @@ public class TransportLayerTest {
 
     @BeforeEach
     public void initialization() throws Exception {
-        this.transportLayer = new TransportLayer();
+        this.transportLayer = new TransportLayer(new MyProtocol("", 0, 0));
         pkts = transportLayer.createPackets(msg);
     }
 

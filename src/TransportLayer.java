@@ -1,5 +1,6 @@
 package src;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
@@ -18,6 +19,7 @@ public class TransportLayer {
 
     private Random rand = new Random();
 
+    private MyProtocol protocol;
     private int ipAddress;
     private ApplicationLayer applicationLayer;
 
@@ -28,11 +30,12 @@ public class TransportLayer {
      * Create Transport Layer instance with a given Application Layer
      * 
      */
-    public TransportLayer() {
+    public TransportLayer(MyProtocol protocol) {
         //TODO: create Network layer instance instead
         this.ipAddress = rand.nextInt(256);
 
         this.applicationLayer = new ApplicationLayer(this);
+        this.protocol = protocol;
     }
 
     /**
@@ -41,9 +44,10 @@ public class TransportLayer {
      * @param aplicationLayer Application Layer
      * @param ipAddress Network Layer
      */
-    public TransportLayer(int ipAddress) {
+    public TransportLayer(MyProtocol protocol, int ipAddress) {
         this.ipAddress = ipAddress;
         this.applicationLayer = new ApplicationLayer(this);
+        this.protocol = protocol;
     }
 
     /**
@@ -55,7 +59,7 @@ public class TransportLayer {
     public void sendMessage(String msg) throws Exception {
         Packet[] pkts = createPackets(msg);
         for (Packet pkt : pkts) {
-            //TODO: send individual packet
+            protocol.send(pkt.toByteBuffer());
         }
     }
 
@@ -113,6 +117,20 @@ public class TransportLayer {
      */
     public void receivedPacket(int[] pkt) throws Exception {
         receivedPacket(new Packet(pkt));
+    }
+
+    /**
+     * redirect received packet as Packet class
+     * 
+     * @param buffer byte buffer
+     * @throws Exception
+     */
+    public void receivedPacket(ByteBuffer buffer) throws Exception {
+        int[] array = new int[buffer.capacity()];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = buffer.get(i);
+        }
+        receivedPacket(new Packet(array));
     }
 
     /**
