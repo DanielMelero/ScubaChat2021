@@ -3,7 +3,6 @@ package src;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 
 /**
  * Transport Layer Mechanism
@@ -17,10 +16,7 @@ public class TransportLayer {
     static final int MAX_BYTES_PER_MESSAGE = 240;
     static final int MAX_MSG_BYTES_PER_PKT = 30;
 
-    private Random rand = new Random();
-
-    private MyProtocol protocol;
-    private int ipAddress;
+    private NetworkLayer networkLayer;
     private ApplicationLayer applicationLayer;
 
     private HashMap<Integer, ArrayList<Packet>> bufferMap = new HashMap<>();
@@ -30,24 +26,9 @@ public class TransportLayer {
      * Create Transport Layer instance with a given Application Layer
      * 
      */
-    public TransportLayer(MyProtocol protocol) {
-        //TODO: create Network layer instance instead
-        this.ipAddress = rand.nextInt(256);
-
+    public TransportLayer(NetworkLayer networkLayer) {
         this.applicationLayer = new ApplicationLayer(this);
-        this.protocol = protocol;
-    }
-
-    /**
-     * Create Transport Layer instance with a given Application Layer and a given Network Layer
-     * 
-     * @param aplicationLayer Application Layer
-     * @param ipAddress Network Layer
-     */
-    public TransportLayer(MyProtocol protocol, int ipAddress) {
-        this.ipAddress = ipAddress;
-        this.applicationLayer = new ApplicationLayer(this);
-        this.protocol = protocol;
+        this.networkLayer = networkLayer;
     }
 
     /**
@@ -59,7 +40,7 @@ public class TransportLayer {
     public void sendMessage(String msg) throws Exception {
         Packet[] pkts = createPackets(msg);
         for (Packet pkt : pkts) {
-            protocol.send(pkt.toByteBuffer());
+            this.networkLayer.sendPacket(pkt);
         }
     }
 
@@ -197,7 +178,7 @@ public class TransportLayer {
         Packet[] pkts = new Packet[substrings.length];
         for (int i = 0; i < pkts.length; i++) {
             boolean hasNext = (i != pkts.length - 1);
-            pkts[i] = new Packet(this.ipAddress, hasNext, null, sequenceNumber, i, substrings[i]);
+            pkts[i] = new Packet(this.networkLayer.getUserID(), hasNext, null, sequenceNumber, i, substrings[i]);
             sequenceNumber++;
         }
         

@@ -1,8 +1,6 @@
 package src;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 
 /**
  * Packet class with all information the packet have
@@ -159,7 +157,7 @@ public class Packet {
      * @return int array
      */
     public int[] toIntArray() {
-        int[] pkt = new int[32];
+        int[] pkt = new int[PACKET_SIZE];
         
         //Network Layer
         pkt[0] = this.sourceAddress;

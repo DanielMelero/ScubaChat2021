@@ -18,7 +18,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class MyProtocol {
 
-	private TransportLayer transportlayer;
+	private NetworkLayer networkLayer;
 	private static int userID = 0;
 	// The host to connect to. Set this to localhost when using the audio interface
 	// tool.
@@ -39,7 +39,7 @@ public class MyProtocol {
 		receivedQueue = new LinkedBlockingQueue<Message>();
 		sendingQueue = new LinkedBlockingQueue<Message>();
 
-		this.transportlayer = new TransportLayer(this);
+		this.networkLayer = new NetworkLayer(this);
 
 		// this.network = new Network();
 
@@ -111,19 +111,13 @@ public class MyProtocol {
 					} else if (m.getType() == MessageType.FREE) { // The channel is no longer busy (no nodes are sending
 																	// within our detection range)
 						System.out.println("FREE");
-					} else if (m.getType() == MessageType.DATA) { // We received a data frame!
-
+					} else if (m.getType() == MessageType.DATA ||       // We received a data frame!
+							   m.getType() == MessageType.DATA_SHORT) { // We received a short data frame!
 						try {
-							transportlayer.receivedPacket(m.getData());
+							networkLayer.receivedPacket(m.getData());
 						} catch (Exception e) {
-							e.printStackTrace();
+							System.out.println("Packet dropped beacuse " + e.getMessage());
 						}
-
-						// System.out.print("DATA: ");
-						// printByteBuffer( m.getData(), m.getData().capacity() ); //Just print the data
-					} else if (m.getType() == MessageType.DATA_SHORT) { // We received a short data frame!
-						System.out.print("DATA_SHORT: ");
-						printByteBuffer(m.getData(), m.getData().capacity()); // Just print the data
 					} else if (m.getType() == MessageType.DONE_SENDING) { // This node is done sending
 						System.out.println("DONE_SENDING");
 					} else if (m.getType() == MessageType.HELLO) { // Server / audio framework hello message. You don't
