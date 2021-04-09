@@ -12,20 +12,23 @@ package src;
 public class ApplicationLayer {
 	
 	private TransportLayer tl;
-	private UI ui;
+	private BetterUI ui;
 	
-	public ApplicationLayer(TransportLayer tl, UI ui) {
+	public ApplicationLayer(TransportLayer tl, BetterUI ui) {
 		this.tl = tl;
 		this.ui = ui;
 	}
 	
-	public ApplicationLayer(UI ui) {
+	public ApplicationLayer(BetterUI ui) {
 		this.ui = ui;
+		
 	}
 	
 	public ApplicationLayer(TransportLayer tl) {
 		this.tl = tl;
-		ui = new SimpleUI(this);
+		ui = new BetterUI();
+		Thread t = new Thread(ui);
+		t.start();
 	}
 	
 	/**
