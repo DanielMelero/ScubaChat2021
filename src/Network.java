@@ -22,7 +22,7 @@ public class Network {
 		
 		
 		try {
-			transportlayer.createPackets(protocol.input);
+			//transportlayer.createPackets(protocol.input);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -36,7 +36,7 @@ public class Network {
 		
 		
 		try {
-			transportlayer.createPackets(protocol.input);
+	//		transportlayer.createPackets(protocol.input);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

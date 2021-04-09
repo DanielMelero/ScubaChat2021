@@ -27,11 +27,11 @@ public class MyProtocol {
 	private static int SERVER_PORT = 8954;
 	// The frequency to use.
 	private static int frequency = 4100;
-	private Network network;
+	//private Network network;
 
 	private BlockingQueue<Message> receivedQueue;
 	private BlockingQueue<Message> sendingQueue;
-	//ByteBuffer message;
+	// ByteBuffer message;
 
 	// String input;
 
@@ -40,8 +40,8 @@ public class MyProtocol {
 		sendingQueue = new LinkedBlockingQueue<Message>();
 
 		this.transportlayer = new TransportLayer(this);
-		
-		//this.network = new Network();
+
+		// this.network = new Network();
 
 		new Client(SERVER_IP, SERVER_PORT, frequency, receivedQueue, sendingQueue); // Give the client the Queues to use
 
@@ -51,12 +51,7 @@ public class MyProtocol {
 
 		// Scanner console = new Scanner(System.in);
 
-		
-			// input = console.nextLine();
-
-			
-
-		
+		// input = console.nextLine();
 
 	}
 
@@ -84,7 +79,7 @@ public class MyProtocol {
 	public static void main(String args[]) {
 
 		if (args.length > 0) {
-			userID = Integer.parseInt(args[1]);
+			// userID = Integer.parseInt(args[1]);
 			frequency = Integer.parseInt(args[0]);
 		}
 		new MyProtocol(SERVER_IP, SERVER_PORT, frequency);
