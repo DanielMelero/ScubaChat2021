@@ -191,15 +191,22 @@ public class BetterUI implements UI, Runnable {
 				}
 			} else {
 				// else send text to application layer
+				boolean error = false;
 				while (true) {
+					
 					try {
 						al.sendMessage(lastInput);
 						break;
 					} catch (Exception e) {
-						System.out.println("message too long, try again");
+						System.out.println(e.getMessage());
+						error = true;
 						break;
 					}
 				}
+				if(error) {
+					continue;
+				}
+				
 				System.out.println("message sent");
 				break;
 			}
