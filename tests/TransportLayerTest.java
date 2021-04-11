@@ -22,7 +22,7 @@ public class TransportLayerTest {
 
     @BeforeEach
     public void initialization() throws Exception {
-        this.transportLayer = new TransportLayer(new MyProtocol("", 0, 0));
+        this.transportLayer = new TransportLayer(new NetworkLayer(new MyProtocol("", 0, 0)));
         pkts = transportLayer.createPackets(msg);
     }
 

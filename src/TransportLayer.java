@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * Transport Layer Mechanism
+ * Transport Layer transform a given string into packet(s) and transfom given packet(s) into a message
  * 
  * @author Daniel Melero
  * 
@@ -51,6 +51,7 @@ public class TransportLayer {
      */
     public void receivedPacket(Packet pkt) {
         int src = pkt.getSourceAddress();
+        this.sendAcknowledgment(src, pkt.getSequenceNumber());
         if (pkt.getHasNext()) {
             //packet indicate that more packets are following
             if(!bufferMap.containsKey(src)){
@@ -112,6 +113,16 @@ public class TransportLayer {
             array[i] = buffer.get(i);
         }
         receivedPacket(new Packet(array));
+    }
+
+    /**
+     * send ack to the source address of the packet with its corresponding sequence number
+     * 
+     * @param sourceAddress source address
+     * @param sequenceNumber sequence number
+     */
+    private void sendAcknowledgment(int sourceAddress, int sequenceNumber) {
+        this.networkLayer.sendAcknowledgment(sourceAddress, sequenceNumber);
     }
 
     /**

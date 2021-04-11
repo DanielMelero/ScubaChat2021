@@ -28,7 +28,7 @@ public class ShortPacket {
      */
     public ShortPacket(ByteBuffer buffer) throws Exception {
         //check if byte buffer correspond to short packet
-        if (buffer.capacity() != this.SHORT_PACKET_SIZE) throw new Exception("Data short size not respected");
+        if (buffer.capacity() != SHORT_PACKET_SIZE) throw new Exception("Data short size not respected");
         
         int[] array = new int[buffer.capacity()];
         for (int i = 0; i < array.length; i++) {
@@ -83,7 +83,7 @@ public class ShortPacket {
      * @return
      */
     public int[] toIntArray() {
-        int[] pkt = new int[this.SHORT_PACKET_SIZE];
+        int[] pkt = new int[SHORT_PACKET_SIZE];
 
         pkt[0] = this.sequenceNumber + (this.isAck ? 1 : 0) * 128;
         pkt[1] = (this.sourceAddress << 4) + this.destinationAddress;

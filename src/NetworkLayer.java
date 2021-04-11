@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.Random;
 
 /**
- * Network Layer class
+ * Network Layer handle all acknowledgments for reliable data transfer
  * 
  * @author Daniel Melero
  */
@@ -15,6 +15,7 @@ public class NetworkLayer {
 	private int userID;
 
 	private TransportLayer transportLayer;
+	private Routing routing;
 	private MyProtocol protocol;
 	
 	/**
@@ -27,6 +28,7 @@ public class NetworkLayer {
 		this.userID = rand.nextInt((int)Math.pow(2, BITS_FOR_ADDRESSES));
 		
 		this.transportLayer = new TransportLayer(this);
+		this.routing = new Routing(this);
 		this.protocol = protocol;
 	}
 
@@ -35,6 +37,7 @@ public class NetworkLayer {
 		if (userID < 0 || userID >= Math.pow(2, BITS_FOR_ADDRESSES)) throw new Exception("user id does not fit address size");
 		this.userID = userID;
 		this.protocol = protocol;
+		this.routing = new Routing(this);
 		this.transportLayer = new TransportLayer(this);
 	}
 
@@ -53,7 +56,7 @@ public class NetworkLayer {
 			if (sp.getIsAck()) {
 				//TODO: Handle ACK
 			} else {
-				//TODO: send to routing
+				this.routing.receivedRoutingPacket(sp);
 			}
 		}
 	}
@@ -65,6 +68,26 @@ public class NetworkLayer {
 	 */
 	public void sendPacket(Packet pkt) {
 		protocol.send(pkt.toByteBuffer());
+	}
+
+	/**
+	 * send short packet to the protocol as a byte buffer
+	 * 
+	 * @param sp short packet
+	 */
+	public void sendShortPacket(ShortPacket sp) {
+		protocol.send(sp.toByteBuffer());
+	}
+
+	/**
+	 * send ack to the destination address for the packet corresponding to the given sequence number
+	 * 
+	 * @param destinationAddress destination address
+	 * @param sequenceNumber sequence number
+	 */
+	public void sendAcknowledgment(int destinationAddress, int sequenceNumber) {
+		ShortPacket sp = new ShortPacket(this.userID, destinationAddress, sequenceNumber);
+		this.sendShortPacket(sp);
 	}
 	
 	/**
@@ -81,6 +104,3 @@ public class NetworkLayer {
 		return this.userID;
 	}
 }
-
-
-
