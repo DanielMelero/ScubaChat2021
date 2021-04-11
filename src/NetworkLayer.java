@@ -11,7 +11,7 @@ import java.util.Random;
 public class NetworkLayer {
 	private static final Random rand = new Random();
 	private static final int BITS_FOR_ADDRESSES = 4;
-	
+	private int ackCounter = 0;
 	private int userID;
 
 	private TransportLayer transportLayer;
@@ -54,7 +54,19 @@ public class NetworkLayer {
 		} else if (pkt.capacity() == 2) {
 			ShortPacket sp = new ShortPacket(pkt);
 			if (sp.getIsAck()) {
-				//TODO: Handle ACK
+				byte[] received = new byte[pkt.remaining()];
+				pkt.get(received, 0, received.length);
+
+				if (((received[1] & 240) >> 4) != getUserID() && (received[1] & 15) == getUserID()) {
+					ackCounter++;
+					if (ackCounter == 3) {
+						protocol.acked = true;
+					} else {
+						Thread.sleep(100);
+					}
+				} else {
+					protocol.sendShort(pkt);
+				}
 			} else {
 				this.routing.receivedRoutingPacket(sp);
 			}
