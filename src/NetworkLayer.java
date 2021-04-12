@@ -18,6 +18,7 @@ public class NetworkLayer {
 	private static final int TIMEOUT_TIME = 4000;
 
 	private int userID;
+	//TODO: change this so there is a waiting list in case same seq num
 	private HashMap<Packet, ArrayList<Integer>> ackMap;
 
 	private TransportLayer transportLayer;

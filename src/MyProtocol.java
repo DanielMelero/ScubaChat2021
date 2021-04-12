@@ -20,6 +20,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class MyProtocol {
 
+	boolean collision = false;
+	boolean free = true;
 	int seq = 0;
 	ShortPacket acknowledment;
 	boolean acked = false;
@@ -92,23 +94,30 @@ public class MyProtocol {
 			// Send it at random times due to the ALOHA Protocol
 			while (!acked) {
 
-				if (new Random().nextInt(100) < 25) {
-					try {
-						sendingQueue.put(msg);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
+				if (free) {
+					if (new Random().nextInt(100) < 50) {
+						try {
+							sendingQueue.put(msg);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					} else {
+
+						send(input);
 					}
+
+				} else {
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e1) {
+						e1.printStackTrace();
+
+					}
+					send(input);
 				}
 
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-
-				}
 			}
 		}
-
 	}
 
 	public static void main(String args[]) {
@@ -143,9 +152,11 @@ public class MyProtocol {
 					if (m.getType() == MessageType.BUSY) { // The channel is busy (A node is sending within our
 															// detection range)
 						System.out.println("BUSY");
+						free = false;
 					} else if (m.getType() == MessageType.FREE) { // The channel is no longer busy (no nodes are sending
-																	// within our detection range)
+																	// // within our detection range)
 						System.out.println("FREE");
+						free = true;
 					} else if (m.getType() == MessageType.DATA) {// We received a data frame!
 						try {
 							networkLayer.receivedPacket(m.getData());

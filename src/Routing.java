@@ -155,13 +155,14 @@ class timeToLiveManager extends TimerTask {
      * decreases TTL and send full routing table if necessary
      */
     public void run() {
-        //TODO: decrease TTL
+        //decrease time to live of all entries of the routing table
         ArrayList<Route> routingTable = routing.getRoutingTable();
         ArrayList<Route> toRemove = new ArrayList<>();
         boolean timeToSendAll = false;
         for(Route route : routingTable) {
             if (route.getAvailableNode() == this.routing.getNetworkLayer().getUserID()) {
                 if (route.decreaseTimeToLive()){
+                    //when itself "dies" it is restored and the hole routing table is sent
                     route.restoreTimeToLive();
                     timeToSendAll = true;
                 }

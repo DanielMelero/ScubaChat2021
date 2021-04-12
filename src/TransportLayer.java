@@ -186,6 +186,7 @@ public class TransportLayer {
         
         // for each msg create a Packet class
         int sequenceNumber = 0; //TODO: figure out how to work with sequence numbers (8 slots)
+        //TODO: keep track of last seq
         Packet[] pkts = new Packet[substrings.length];
         for (int i = 0; i < pkts.length; i++) {
             boolean hasNext = (i != pkts.length - 1);
