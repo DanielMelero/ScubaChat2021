@@ -86,7 +86,7 @@ public class NetworkLayer {
 	 * @param sequenceNumber sequence number
 	 */
 	public void sendAcknowledgment(int destinationAddress, int sequenceNumber) {
-		ShortPacket sp = new ShortPacket(this.userID, destinationAddress, sequenceNumber);
+		ShortPacket sp = new ShortPacket(true, this.userID, destinationAddress, sequenceNumber);
 		this.sendShortPacket(sp);
 	}
 	

@@ -1,7 +1,8 @@
 package src;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Routing class keeps track of available nodes
@@ -9,12 +10,9 @@ import java.util.HashMap;
  * @author Daniel Melero
  */
 public class Routing {
-    static final int TTL = 10;
-
     private NetworkLayer networkLayer;
 
-    // TODO: private HashMap<Integer[], Integer> availableNodes; key -> {available node, next hop, cost}
-    private HashMap<Integer, Integer> availableNodes;
+    private ArrayList<Route> routingTable;
 
     /**
      * create routing table with a given network layer
@@ -22,11 +20,14 @@ public class Routing {
      * @param networkLayer network layer
      */
     public Routing(NetworkLayer networkLayer) {
-        availableNodes = new HashMap<>();
+        this.routingTable = new ArrayList<>();
         this.networkLayer = networkLayer;
         int id = this.networkLayer.getUserID();
-        this.availableNodes.put(addressesToMapKey(id, id), TTL);
-        //TODO: create new thread to decrease TTL
+        this.routingTable.add(new Route(id, id, 0));
+
+        //decrease TTL every second
+        Timer timer = new Timer();
+        timer.schedule(new timeToLiveManager(this), 0, 1000);
     }
 
     /**
@@ -66,8 +67,8 @@ public class Routing {
     private ArrayList<Integer> getAvailableNodes() {
         ArrayList<Integer> res = new ArrayList<>();
 
-        for (Integer key : availableNodes.keySet()) {
-            res.add(mapKeytoAdresses(key)[0]);
+        for (Route route : this.routingTable) {
+            res.add(route.getAvailableNode());
         }
 
         return res;
@@ -79,7 +80,7 @@ public class Routing {
      * @param sp
      */
     public void receivedRoutingPacket(ShortPacket sp) {
-        addNode(sp.getSourceAddress());
+        addRoute(sp.toRoute());
     }
 
     /**
@@ -87,28 +88,32 @@ public class Routing {
      * 
      * @param nodeAddress
      */
-    private void addNode(int nodeAddress) {
+    private void addRoute(Route route) {
         //do not add node if it is itself
-        if (nodeAddress == this.networkLayer.getUserID()) return;
-
-        // not using nextHop address because we use data packets as routing information and it does not enough info
-        int key = addressesToMapKey(nodeAddress, 0); //TODO: use nextHop
+        if (route.getAvailableNode() == this.networkLayer.getUserID()) return;
+        //do not add node if the cost is too big
+        if (route.getCost() >= 4) return;
         
-        //send routing entry if it is going to be added
-        if (!this.availableNodes.containsKey(key)) {
-            this.sendEntry(nodeAddress);
+        boolean found = false;
+        for (Route r : this.routingTable) {
+            if (r.updateRoute(route)) {
+                found = true;
+                break;
+            }
         }
 
-        //add node or restart TTL if already exists
-        this.availableNodes.put(key, TTL);
+        if (!found) {
+            this.routingTable.add(route);
+            this.sendRoute(route);
+        }
     }
 
     /**
      * send routing table one entry at a time
      */
-    private void sendRoutingTable() {
-        for (int node : this.getAvailableNodes()) {
-            this.sendEntry(node);
+    public void sendRoutingTable() {
+        for (Route route : this.routingTable) {
+            this.sendRoute(route);
         }
     }
 
@@ -117,37 +122,62 @@ public class Routing {
      * 
      * @param nodeAddress
      */
-    private void sendEntry(int nodeAddress) {
-        ShortPacket sp = new ShortPacket(nodeAddress, this.networkLayer.getUserID());
+    private void sendRoute(Route route) {
+        ShortPacket sp = new ShortPacket(false, route.getAvailableNode(), this.networkLayer.getUserID(), route.getCost() + 1);
         this.networkLayer.sendShortPacket(sp);
     }
 
     /**
-     * transform a key from routing table to {available node, next hop node}
+     * routing table getter
      * 
-     * @param key
      * @return
      */
-    private int[] mapKeytoAdresses(int key) {
-        int[] res = new int[2];
+    public ArrayList<Route> getRoutingTable() {
+        return this.routingTable;
+    }
 
-        //get source address. 240 -> 1111 0000
-        res[0] = key & 240;
+    public NetworkLayer getNetworkLayer() {
+        return this.networkLayer;
+    }
+}
 
-        //get destination address. 15 -> 0000 1111
-        res[1] = key & 15;
+/**
+ * This class is called every 1 second and decreases TTL in the routing table
+ */
+class timeToLiveManager extends TimerTask {
+    private Routing routing;
 
-        return res;
+    public timeToLiveManager(Routing routing) {
+        this.routing = routing;
     }
 
     /**
-     * transform given values to an entry for the routing table
-     * 
-     * @param destination
-     * @param NextHop
-     * @return
+     * decreases TTL and send full routing table if necessary
      */
-    private int addressesToMapKey(int destination, int NextHop) {
-        return (destination << 4) + NextHop;
+    public void run() {
+        //TODO: decrease TTL
+        ArrayList<Route> routingTable = routing.getRoutingTable();
+        ArrayList<Route> toRemove = new ArrayList<>();
+        boolean timeToSendAll = false;
+        for(Route route : routingTable) {
+            if (route.getAvailableNode() == this.routing.getNetworkLayer().getUserID()) {
+                if (route.decreaseTimeToLive()){
+                    route.restoreTimeToLive();
+                    timeToSendAll = true;
+                }
+            } else if (route.decreaseTimeToLive()) {
+                toRemove.add(route);
+            }
+        }
+
+        //remove all route with no time to live
+        for (Route route : toRemove) {
+            routingTable.remove(route);
+        }
+
+        //send the routing table if necessary
+        if (timeToSendAll) {
+            this.routing.sendRoutingTable();
+        }
     }
 }

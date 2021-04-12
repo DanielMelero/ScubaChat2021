@@ -11,10 +11,13 @@ public class ShortPacket {
     static final int SHORT_PACKET_SIZE = 2;
 
     //Routing information
-    private int sourceAddress;
-    private int destinationAddress;
+    private int availableNode;
+    private int nextHop;
+    private int cost;
 
     //acknowledgement
+    private int sourceAddress;
+    private int destinationAddress;
     private int sequenceNumber;
 
     //type of short packet
@@ -40,41 +43,38 @@ public class ShortPacket {
         if (isAck) {
             //get sequence number. 127 -> 0111 1111
             this.sequenceNumber = array[0] & 127;
+            //get source address. 240 -> 1111 0000
+            this.sourceAddress = array[1] & 240;
+            //get destination address. 15 -> 0000 1111
+            this.destinationAddress = array[1] & 15;
+        } else {
+            //get routing cost. 127 -> 0111 1111
+            this.cost = array[0] & 127;
+            //get available node address. 240 -> 1111 0000
+            this.availableNode = array[1] & 240;
+            //get next hop address. 15 -> 0000 1111
+            this.nextHop = array[1] & 15;
         }
-        //get source address. 240 -> 1111 0000
-        this.sourceAddress = array[1] & 240;
-
-        //get destination address. 15 -> 0000 1111
-        this.destinationAddress = array[1] & 15;
     }
 
     /**
-     * create routing short packet
+     * create short packet from given information
      * 
      * @param sourceAddress source address
      * @param destinationAddress destination address
      */
-    public ShortPacket(int sourceAddress, int destinationAddress) {
-        this.sourceAddress = sourceAddress;
-        this.destinationAddress = destinationAddress;
-        this.sequenceNumber = 0;
+    public ShortPacket(boolean isAck, int value1, int value2, int value3) {
+        this.isAck = isAck;
 
-        this.isAck = false;
-    }
-
-    /**
-     * create acknowledgment short packet
-     * 
-     * @param sourceAddress source address
-     * @param destinationAddress destination address
-     * @param sequenceNumber sequence number
-     */
-    public ShortPacket(int sourceAddress, int destinationAddress, int sequenceNumber) {
-        this.sourceAddress = sourceAddress;
-        this.destinationAddress = destinationAddress;
-        this.sequenceNumber = sequenceNumber;
-
-        this.isAck = true;
+        if (isAck) {
+            this.sourceAddress = value1;
+            this.destinationAddress = value2;
+            this.sequenceNumber = value3;
+        } else {
+            this.availableNode = value1;
+            this.nextHop = value2;
+            this.cost = value3;
+        }
     }
 
     /**
@@ -85,8 +85,14 @@ public class ShortPacket {
     public int[] toIntArray() {
         int[] pkt = new int[SHORT_PACKET_SIZE];
 
-        pkt[0] = this.sequenceNumber + (this.isAck ? 1 : 0) * 128;
-        pkt[1] = (this.sourceAddress << 4) + this.destinationAddress;
+        if (this.isAck) {
+            pkt[0] = this.sequenceNumber + (this.isAck ? 1 : 0) * 128;
+            pkt[1] = (this.sourceAddress << 4) + this.destinationAddress;
+        } else {
+            pkt[0] = this.cost + (this.isAck ? 1 : 0) * 128;
+            pkt[1] = (this.availableNode << 4) + this.nextHop;
+        }
+        
 
         return pkt;
     }
@@ -111,6 +117,10 @@ public class ShortPacket {
 		toSend.put(inputBytes, 0, inputBytes.length);
         
         return toSend;
+    }
+
+    public Route toRoute() {
+        return new Route(availableNode, nextHop, cost);
     }
 
     /**
@@ -147,5 +157,32 @@ public class ShortPacket {
      */
     public int getSequenceNumber() {
         return this.sequenceNumber;
+    }
+
+    /**
+     * available node getter
+     * 
+     * @return
+     */
+    public int getAvailableNode() {
+        return this.availableNode;
+    }
+
+    /**
+     * next hop getter
+     * 
+     * @return
+     */
+    public int getNextHop() {
+        return this.nextHop;
+    }
+
+    /**
+     * cost getter
+     * 
+     * @return
+     */
+    public int getCost() {
+        return this.cost;
     }
 }
