@@ -78,10 +78,16 @@ public class NetworkLayer {
 	 * @param sp short packet
 	 */
 	public void handleAck(ShortPacket sp) {
-		if (sp.getSourceAddress() == this.userID || sp.getDestinationAddress() != this.userID) {
-			//return if it is sent from this instance or not meant for this instance
+		if (sp.getSourceAddress() == this.userID) {
+			//return if it is sent from this instance (our ack is being forwarded)
+			return;
+		} else if (sp.getDestinationAddress() != this.userID) {
+			//this ack is not meant for this instance
+			//TODO: forward it
 			return;
 		}
+
+		//add ack to correct packet list
 		for(Packet key : this.ackMap.keySet()) {
 			if (key.getSequenceNumber() == sp.getSequenceNumber()) {
 				ArrayList<Integer> acks = this.ackMap.get(key);
@@ -99,8 +105,10 @@ public class NetworkLayer {
 	 * @param pkt
 	 */
 	public void sendPacket(Packet pkt) {
-		//store packet waiting for acks
+		
+		//if it is a retransmission do not erase acks already received
 		if (!ackMap.containsKey(pkt)){
+			//store new packet waiting for acks
 			ackMap.put(pkt, new ArrayList<>());
 		}
 
