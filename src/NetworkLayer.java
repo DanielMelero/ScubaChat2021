@@ -1,7 +1,11 @@
 package src;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Network Layer handle all acknowledgments for reliable data transfer
@@ -11,8 +15,10 @@ import java.util.Random;
 public class NetworkLayer {
 	private static final Random rand = new Random();
 	private static final int BITS_FOR_ADDRESSES = 4;
-	private int ackCounter = 0;
+	private static final int TIMEOUT_TIME = 4000;
+
 	private int userID;
+	private HashMap<Packet, ArrayList<Integer>> ackMap;
 
 	private TransportLayer transportLayer;
 	private Routing routing;
@@ -30,6 +36,7 @@ public class NetworkLayer {
 		this.transportLayer = new TransportLayer(this);
 		this.routing = new Routing(this);
 		this.protocol = protocol;
+		this.ackMap = new HashMap<>();
 	}
 
 	public NetworkLayer(MyProtocol protocol, int userID) throws Exception {
@@ -39,6 +46,7 @@ public class NetworkLayer {
 		this.userID = userID;
 		this.protocol = protocol;
 		this.routing = new Routing(this);
+		this.ackMap = new HashMap<>();
 		this.transportLayer = new TransportLayer(this);
 	}
 
@@ -55,38 +63,34 @@ public class NetworkLayer {
 		} else if (pkt.capacity() == 2) {
 			ShortPacket sp = new ShortPacket(pkt);
 			if (sp.getIsAck()) {
-				handleAck(pkt);
+				// handle packet of type SHORT_DATA as an acknowledgment
+				this.handleAck(sp);
 			} else {
+				// send packet of type SHORT_DATA to the routing protocol
 				this.routing.receivedRoutingPacket(sp);
 			}
 		}
 	}
 
 	/**
-	 * handle acknowledgment
+	 * handle acknowledgments
 	 * 
-	 * @param pkt
+	 * @param sp short packet
 	 */
-
-	public void handleAck(ByteBuffer pkt) {
-		byte[] received = new byte[pkt.remaining()];
-		pkt.get(received, 0, received.length);
-
-		if (((received[1] & 240) >> 4) != getUserID() && (received[1] & 15) == getUserID()) {
-			ackCounter++;
-			if (ackCounter == 3) {
-				protocol.acked = true;
-			} else {
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		} else {
-			protocol.sendShort(pkt);
+	public void handleAck(ShortPacket sp) {
+		if (sp.getSourceAddress() == this.userID || sp.getDestinationAddress() != this.userID) {
+			//return if it is sent from this instance or not meant for this instance
+			return;
 		}
-
+		for(Packet key : this.ackMap.keySet()) {
+			if (key.getSequenceNumber() == sp.getSequenceNumber()) {
+				ArrayList<Integer> acks = this.ackMap.get(key);
+				if (!acks.contains(sp.getSourceAddress())) {
+					acks.add(sp.getSourceAddress());
+				}
+				break;
+			}
+		}
 	}
 
 	/**
@@ -95,6 +99,15 @@ public class NetworkLayer {
 	 * @param pkt
 	 */
 	public void sendPacket(Packet pkt) {
+		//store packet waiting for acks
+		if (!ackMap.containsKey(pkt)){
+			ackMap.put(pkt, new ArrayList<>());
+		}
+
+		//set up a time out
+		Timer timer = new Timer();
+        timer.schedule(new TimeOut(this, timer, pkt), 0, TIMEOUT_TIME);
+
 		protocol.send(pkt.toByteBuffer());
 	}
 
@@ -129,7 +142,63 @@ public class NetworkLayer {
 		this.transportLayer.receivedPacket(buffer);
 	}
 
+	public void destroyMe(Timer timeOut) {
+		timeOut.cancel();
+        timeOut.purge();
+        return;
+	}
+
+	public ArrayList<Integer> getAcks(Packet packet) {
+		return this.ackMap.get(packet);
+	}
+
+	public void eraseAckMapEntry(Packet packet) {
+		this.ackMap.remove(packet);
+	}
+
 	public int getUserID() {
 		return this.userID;
 	}
+
+	public Routing getRouting() {
+		return this.routing;
+	}
+}
+
+/**
+ * This class is called after timeout to check if a retransmission is necessary
+ */
+class TimeOut extends TimerTask {
+    private NetworkLayer networkLayer;
+	private Packet packet;
+	private Timer timer;
+
+    public TimeOut(NetworkLayer networkLayer, Timer timer, Packet packet) {
+        this.networkLayer = networkLayer;
+		this.packet = packet;
+		this.timer = timer;
+    }
+
+    /**
+     * check if retransmission is needed
+     */
+    public void run() {
+        ArrayList<Integer> acks = this.networkLayer.getAcks(this.packet);
+		boolean allAcknoledged = true;
+		for(int node : this.networkLayer.getRouting().getNeededAcknowledgements()) {
+			if (!acks.contains(node)) {
+				allAcknoledged = false;
+				break;
+			}
+		}
+
+		if (!allAcknoledged) {
+			this.networkLayer.sendPacket(this.packet);
+		} else {
+			this.networkLayer.eraseAckMapEntry(this.packet);
+		}
+
+		//finish task
+		this.networkLayer.destroyMe(this.timer);
+    }
 }

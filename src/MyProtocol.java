@@ -147,31 +147,17 @@ public class MyProtocol {
 																	// within our detection range)
 						System.out.println("FREE");
 					} else if (m.getType() == MessageType.DATA) {// We received a data frame!
-
-						byte[] received = new byte[m.getData().remaining()];
-						m.getData().get(received, 0, received.length);
-
-						int source = received[0];
-
-						acknowledment = new ShortPacket(true, networkLayer.getUserID(), source, seq);
-
 						try {
 							networkLayer.receivedPacket(m.getData());
-							networkLayer.sendShortPacket(acknowledment);
-
 						} catch (Exception e) {
 							System.out.println("Packet dropped beacuse " + e.getMessage());
 						}
-						seq++;
-
 					} else if (m.getType() == MessageType.DATA_SHORT) { // We received a short data frame!
-
 						try {
 							networkLayer.receivedPacket(m.getData());
 						} catch (Exception e) {
 							System.out.println("Packet dropped beacuse " + e.getMessage());
 						}
-
 					} else if (m.getType() == MessageType.DONE_SENDING) { // This node is done sending
 						System.out.println("DONE_SENDING");
 					} else if (m.getType() == MessageType.HELLO) { // Server / audio framework hello message. You don't
