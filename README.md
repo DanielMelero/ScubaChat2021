@@ -2,7 +2,6 @@
 Module 3 - Network Systems (2020/2021) - University of Twente.
 
 Daniel Melero Martinez, s2357983
-Filip George Bănică, s2520311
 Kento Verlaan, s2622343
 Radmehr Ghadiri, s2452650
 
