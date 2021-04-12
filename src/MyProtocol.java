@@ -6,7 +6,9 @@ import client.*;
 
 import java.nio.ByteBuffer;
 import java.io.Console;
+import java.util.Random;
 import java.util.Scanner;
+import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -18,6 +20,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class MyProtocol {
 
+	int seq = 0;
+	ShortPacket acknowledment;
+	boolean acked = false;
 	private NetworkLayer networkLayer;
 	private static int userID = 0;
 	// The host to connect to. Set this to localhost when using the audio interface
@@ -27,7 +32,7 @@ public class MyProtocol {
 	private static int SERVER_PORT = 8954;
 	// The frequency to use.
 	private static int frequency = 4100;
-	//private Network network;
+	// private Network network;
 
 	private BlockingQueue<Message> receivedQueue;
 	private BlockingQueue<Message> sendingQueue;
@@ -36,6 +41,7 @@ public class MyProtocol {
 	// String input;
 
 	public MyProtocol(String server_ip, int server_port, int frequency) {
+
 		receivedQueue = new LinkedBlockingQueue<Message>();
 		sendingQueue = new LinkedBlockingQueue<Message>();
 
@@ -55,6 +61,17 @@ public class MyProtocol {
 
 	}
 
+	public void sendShort(ByteBuffer inputShort) {
+		Message msg;
+		msg = new Message(MessageType.DATA_SHORT, inputShort);
+		try {
+			sendingQueue.put(msg);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+	}
+
 	public void send(ByteBuffer input) {
 
 		// byte[] inputBytes = input.getBytes(); // get bytes from input
@@ -68,18 +85,33 @@ public class MyProtocol {
 		// } else {
 		// msg = new Message(MessageType.DATA_SHORT, toSend);
 		// }
-		try {
-			sendingQueue.put(msg);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		// Send it at random times due to the ALOHA Protocol
+		while (!acked) {
+
+			if (new Random().nextInt(100) < 25) {
+				try {
+					sendingQueue.put(msg);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+
+			}
 		}
 
 	}
 
+
+
 	public static void main(String args[]) {
 
 		if (args.length > 0) {
-			// userID = Integer.parseInt(args[1]);
+			userID = Integer.parseInt(args[1]);
 			frequency = Integer.parseInt(args[0]);
 		}
 		new MyProtocol(SERVER_IP, SERVER_PORT, frequency);
@@ -111,13 +143,32 @@ public class MyProtocol {
 					} else if (m.getType() == MessageType.FREE) { // The channel is no longer busy (no nodes are sending
 																	// within our detection range)
 						System.out.println("FREE");
-					} else if (m.getType() == MessageType.DATA ||       // We received a data frame!
-							   m.getType() == MessageType.DATA_SHORT) { // We received a short data frame!
+					} else if (m.getType() == MessageType.DATA) {// We received a data frame!
+
+						byte[] received = new byte[m.getData().remaining()];
+						m.getData().get(received, 0, received.length);
+
+						int source = received[0];
+
+						acknowledment = new ShortPacket(networkLayer.getUserID(), source, seq);
+
+						try {
+							networkLayer.receivedPacket(m.getData());
+							networkLayer.sendShortPacket(acknowledment);
+
+						} catch (Exception e) {
+							System.out.println("Packet dropped beacuse " + e.getMessage());
+						}
+						seq++;
+						
+					} else if (m.getType() == MessageType.DATA_SHORT) { // We received a short data frame!
+
 						try {
 							networkLayer.receivedPacket(m.getData());
 						} catch (Exception e) {
 							System.out.println("Packet dropped beacuse " + e.getMessage());
 						}
+
 					} else if (m.getType() == MessageType.DONE_SENDING) { // This node is done sending
 						System.out.println("DONE_SENDING");
 					} else if (m.getType() == MessageType.HELLO) { // Server / audio framework hello message. You don't

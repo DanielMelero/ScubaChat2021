@@ -220,6 +220,7 @@ public class BetterUI implements UI, Runnable {
 
 	@Override
 	public void run() {
+		
 		startInputHandler();
 	}
 	
