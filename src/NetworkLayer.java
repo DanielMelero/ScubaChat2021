@@ -15,7 +15,7 @@ import java.util.TimerTask;
 public class NetworkLayer {
 	private static final Random rand = new Random();
 	private static final int BITS_FOR_ADDRESSES = 4;
-	private static final int TIMEOUT_TIME = 4000;
+	private static final int TIMEOUT_TIME = 6000;
 
 	private int userID;
 	//TODO: change this so there is a waiting list in case same seq num

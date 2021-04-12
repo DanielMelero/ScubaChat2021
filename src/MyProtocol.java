@@ -5,9 +5,10 @@ import client.*;
 //import protocol.TransportLayer;
 
 import java.nio.ByteBuffer;
-import java.io.Console;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
-import java.util.Scanner;
+import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -25,6 +26,7 @@ public class MyProtocol {
 	int seq = 0;
 	ShortPacket acknowledment;
 	boolean acked = false;
+	HashMap<ByteBuffer, Timer> timer = new HashMap();
 	private NetworkLayer networkLayer;
 	private static int userID = 0;
 	// The host to connect to. Set this to localhost when using the audio interface
@@ -63,60 +65,51 @@ public class MyProtocol {
 
 	}
 
-	public void sendShort(ByteBuffer inputShort) {
-		Message msg;
-		msg = new Message(MessageType.DATA_SHORT, inputShort);
-		try {
-			sendingQueue.put(msg);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
+	public void send(ByteBuffer input) {
+		this.timer.put(input, new Timer());
+        this.timer.get(input).schedule(new TryToSend(input, this), 0, 100);
 	}
 
-	public void send(ByteBuffer input) {
-
+	private void mediumAccessControl(ByteBuffer input) {
+		Message msg;
 		if (input.capacity() == 2) {
-			sendShort(input);
-		} else if (input.capacity() == 32) {
-
-			// byte[] inputBytes = input.getBytes(); // get bytes from input
-			// ByteBuffer toSend = ByteBuffer.allocate(inputBytes.length); // make a new
-			// byte buffer with the length of the input string
-			// toSend.put( inputBytes, 0, inputBytes.length ); // copy the input string into
-			// the byte buffer.
-			Message msg;
-			// if( (input.length()) > 2 ){
+			msg = new Message(MessageType.DATA_SHORT, input);
+		} else  {
 			msg = new Message(MessageType.DATA, input);
-			// } else {
-			// msg = new Message(MessageType.DATA_SHORT, toSend);
-			// }
-			// Send it at random times due to the ALOHA Protocol
-			while (!acked) {
-
-				if (free) {
-					if (new Random().nextInt(100) < 50) {
-						try {
-							sendingQueue.put(msg);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					} else {
-
-						send(input);
-					}
-
-				} else {
-					try {
-						Thread.sleep(500);
-					} catch (InterruptedException e1) {
-						e1.printStackTrace();
-
-					}
-					send(input);
+		}
+		// Send it at random times due to the ALOHA Protocol
+		if (free) {
+			if (new Random().nextInt(100) < 50) {
+				try {
+					sendingQueue.put(msg);
+					Timer t = timer.get(input);
+					t.cancel();
+        			t.purge();
+					this.timer.remove(input);
+        			return;
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
-
+			} else {
+				mediumAccessControl(input);
 			}
+		}
+	}
+
+	class TryToSend extends TimerTask {
+		private ByteBuffer input;
+		private MyProtocol protocol;
+	
+		public TryToSend(ByteBuffer input, MyProtocol protocol) {
+			this.input = input;
+			this.protocol = protocol;
+		}
+	
+		/**
+		 * resend input
+		 */
+		public void run() {
+			protocol.mediumAccessControl(input);
 		}
 	}
 
@@ -151,11 +144,9 @@ public class MyProtocol {
 					Message m = receivedQueue.take();
 					if (m.getType() == MessageType.BUSY) { // The channel is busy (A node is sending within our
 															// detection range)
-						System.out.println("BUSY");
 						free = false;
 					} else if (m.getType() == MessageType.FREE) { // The channel is no longer busy (no nodes are sending
 																	// // within our detection range)
-						System.out.println("FREE");
 						free = true;
 					} else if (m.getType() == MessageType.DATA) {// We received a data frame!
 						try {
@@ -170,12 +161,10 @@ public class MyProtocol {
 							System.out.println("Packet dropped beacuse " + e.getMessage());
 						}
 					} else if (m.getType() == MessageType.DONE_SENDING) { // This node is done sending
-						System.out.println("DONE_SENDING");
 					} else if (m.getType() == MessageType.HELLO) { // Server / audio framework hello message. You don't
 																	// have to handle this
 						System.out.println("HELLO");
 					} else if (m.getType() == MessageType.SENDING) { // This node is sending
-						System.out.println("SENDING");
 					} else if (m.getType() == MessageType.END) { // Server / audio framework disconnect message. You
 																	// don't have to handle this
 						System.out.println("END");
