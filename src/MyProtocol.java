@@ -150,7 +150,7 @@ public class MyProtocol {
 
 						int source = received[0];
 
-						acknowledment = new ShortPacket(networkLayer.getUserID(), source, seq);
+						acknowledment = new ShortPacket(true, networkLayer.getUserID(), source, seq);
 
 						try {
 							networkLayer.receivedPacket(m.getData());
