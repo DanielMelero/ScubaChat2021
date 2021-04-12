@@ -74,45 +74,48 @@ public class MyProtocol {
 
 	public void send(ByteBuffer input) {
 
-		// byte[] inputBytes = input.getBytes(); // get bytes from input
-		// ByteBuffer toSend = ByteBuffer.allocate(inputBytes.length); // make a new
-		// byte buffer with the length of the input string
-		// toSend.put( inputBytes, 0, inputBytes.length ); // copy the input string into
-		// the byte buffer.
-		Message msg;
-		// if( (input.length()) > 2 ){
-		msg = new Message(MessageType.DATA, input);
-		// } else {
-		// msg = new Message(MessageType.DATA_SHORT, toSend);
-		// }
-		// Send it at random times due to the ALOHA Protocol
-		while (!acked) {
+		if (input.capacity() == 2) {
+			sendShort(input);
+		} else if (input.capacity() == 32) {
 
-			if (new Random().nextInt(100) < 25) {
-				try {
-					sendingQueue.put(msg);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+			// byte[] inputBytes = input.getBytes(); // get bytes from input
+			// ByteBuffer toSend = ByteBuffer.allocate(inputBytes.length); // make a new
+			// byte buffer with the length of the input string
+			// toSend.put( inputBytes, 0, inputBytes.length ); // copy the input string into
+			// the byte buffer.
+			Message msg;
+			// if( (input.length()) > 2 ){
+			msg = new Message(MessageType.DATA, input);
+			// } else {
+			// msg = new Message(MessageType.DATA_SHORT, toSend);
+			// }
+			// Send it at random times due to the ALOHA Protocol
+			while (!acked) {
+
+				if (new Random().nextInt(100) < 25) {
+					try {
+						sendingQueue.put(msg);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
-			}
 
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
 
+				}
 			}
 		}
 
 	}
 
-
-
 	public static void main(String args[]) {
 
 		if (args.length > 0) {
-			userID = Integer.parseInt(args[1]);
-			frequency = Integer.parseInt(args[0]);
+			userID = Integer.parseInt(args[0]);
+			frequency = Integer.parseInt(args[1]);
 		}
 		new MyProtocol(SERVER_IP, SERVER_PORT, frequency);
 	}
@@ -160,7 +163,7 @@ public class MyProtocol {
 							System.out.println("Packet dropped beacuse " + e.getMessage());
 						}
 						seq++;
-						
+
 					} else if (m.getType() == MessageType.DATA_SHORT) { // We received a short data frame!
 
 						try {
