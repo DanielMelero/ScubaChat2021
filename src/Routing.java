@@ -12,6 +12,8 @@ import java.util.TimerTask;
 public class Routing {
     private NetworkLayer networkLayer;
 
+    private Route itself;
+
     private ArrayList<Route> routingTable;
 
     /**
@@ -23,7 +25,7 @@ public class Routing {
         this.routingTable = new ArrayList<>();
         this.networkLayer = networkLayer;
         int id = this.networkLayer.getUserID();
-        this.routingTable.add(new Route(id, id, 0));
+        this.itself = new Route(id, id, 0);
 
         //decrease TTL every second
         Timer timer = new Timer();
@@ -37,11 +39,9 @@ public class Routing {
      */
     public int[] getNeededAcknowledgements() {
         ArrayList<Integer> availableNodes = this.getAvailableNodes();
-        int id = this.networkLayer.getUserID();
 
         int[] res;
-        // return all available nodes except itself
-        availableNodes.remove((Object)id);
+        // return all available nodes
         res = new int[availableNodes.size()];
         for (int i = 0; i < res.length; i++) {
             res[i] = availableNodes.get(i);
@@ -102,6 +102,7 @@ public class Routing {
      * send routing table one entry at a time
      */
     public void sendRoutingTable() {
+        this.sendRoute(this.itself);
         for (Route route : this.routingTable) {
             this.sendRoute(route);
         }
@@ -136,6 +137,7 @@ public class Routing {
  */
 class timeToLiveManager extends TimerTask {
     private Routing routing;
+    private int timeToSendAll = 2;
 
     public timeToLiveManager(Routing routing) {
         this.routing = routing;
@@ -149,15 +151,8 @@ class timeToLiveManager extends TimerTask {
         //decrease time to live of all entries of the routing table
         ArrayList<Route> routingTable = routing.getRoutingTable();
         ArrayList<Route> toRemove = new ArrayList<>();
-        boolean timeToSendAll = false;
         for(Route route : routingTable) {
-            if (route.getAvailableNode() == this.routing.getNetworkLayer().getUserID()) {
-                if (route.decreaseTimeToLive()){
-                    //when itself "dies" it is restored and the hole routing table is sent
-                    route.restoreTimeToLive();
-                    timeToSendAll = true;
-                }
-            } else if (route.decreaseTimeToLive()) {
+            if (route.decreaseTimeToLive()) {
                 toRemove.add(route);
             }
         }
@@ -168,8 +163,11 @@ class timeToLiveManager extends TimerTask {
         }
 
         //send the routing table if necessary
-        if (timeToSendAll) {
+        if (timeToSendAll == 0) {
+            this.timeToSendAll = 3;
             this.routing.sendRoutingTable();
+        } else {
+            this.timeToSendAll--;
         }
     }
 }

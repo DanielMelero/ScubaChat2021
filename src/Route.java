@@ -6,7 +6,7 @@ package src;
  * @author Daniel Melero
  */
 public class Route {
-    private static final int TTL = 10;
+    private static final int TTL = 5;
 
     private int availableNode;
     private int nextHop;
@@ -107,6 +107,6 @@ public class Route {
         if (o.getClass() != Route.class) return false;
 
         Route route = (Route) o;
-        return route.getAvailableNode() == this.availableNode || route.getNextHop() == this.nextHop || route.getCost() == this.cost;
+        return route.getAvailableNode() == this.availableNode && route.getNextHop() == this.nextHop && route.getCost() == this.cost;
     }
 }
