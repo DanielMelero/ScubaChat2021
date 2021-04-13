@@ -57,5 +57,9 @@ public class ApplicationLayer {
 		tl.sendMessage(msg);
 
 	}
+	
+	public TransportLayer getTransportLayer() {
+		return tl;
+	}
 
 }

@@ -147,6 +147,17 @@ public class BetterUI implements UI, Runnable {
 		
 	}
 	
+	private void getNodes() {
+		// get the available nodes at the time
+		int[] nodes = al.getTransportLayer().getNetworkLayer().getRouting().getNeededAcknowledgements();
+		// print it out
+		System.out.println("The available nodes are currently:");
+		for (int i : nodes) {
+			System.out.print(i + ", ");
+		}
+		System.out.println();
+	}
+	
 	/**
 	 * method to show menu
 	 */
