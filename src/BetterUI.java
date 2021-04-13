@@ -217,15 +217,17 @@ public class BetterUI implements UI, Runnable {
 			// if SET option is used
 			if (lastInput.charAt(0) == SET && lastInput.length() > 1) {
 				String[] arguments = lastInput.split(" ");
-				// check for enough arguments
-				if (arguments.length == 3 && isNumeric(arguments[1])) {
-					// add user name
-					addUser(Integer.parseInt(arguments[1]), arguments[2]);
-					continue;
-				} else {
-					// give error message
-					System.out.println("unknown command try again");
-					continue;
+				if (arguments.length == 3) {
+					// check for enough arguments
+					if (isNumeric(arguments[1])) {
+						// add user name
+						addUser(Integer.parseInt(arguments[1]), arguments[2]);
+						continue;
+					} else {
+						// give error message
+						System.out.println("unknown command try again");
+						continue;
+					}
 				}
 			}
 			
