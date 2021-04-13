@@ -22,7 +22,9 @@ public class TransportLayer {
     private HashMap<Integer, ArrayList<Packet>> bufferMap = new HashMap<>();
     private HashMap<Integer, Packet> waitingForMissingPackets = new HashMap<>();
 
-    private HashMap<Integer, ArrayList<Packet>> packetsAlreadyReceived = new HashMap<>();;
+    private HashMap<Integer, Packet[]> packetsAlreadyReceived = new HashMap<>();;
+
+    private int sequenceNumberIndex;
 
     /**
      * Create Transport Layer instance with a given Application Layer
@@ -31,6 +33,7 @@ public class TransportLayer {
     public TransportLayer(NetworkLayer networkLayer) {
         this.applicationLayer = new ApplicationLayer(this);
         this.networkLayer = networkLayer;
+        this.sequenceNumberIndex = 0;
     }
 
     /**
@@ -57,17 +60,9 @@ public class TransportLayer {
         //always send ack when receiving packet
         this.sendAcknowledgment(src, pkt.getSequenceNumber());
 
-        ArrayList<Packet> storage = packetsAlreadyReceived.get(src);
-        if (storage == null) {
-            //create storage for packets from this node
-            packetsAlreadyReceived.put(src, new ArrayList<>());
-            packetsAlreadyReceived.get(src).add(pkt);
-        } else if (storage.contains(pkt)) {
+        if (!this.addToStorageIfPossible(pkt)) {
             //packet have already been received so return
             return;
-        } else {
-            //add new packet to the storage
-            storage.add(pkt);
         }
 
         if (pkt.getHasNext()) {
@@ -106,6 +101,34 @@ public class TransportLayer {
                 }
             }
             
+        }
+    }
+
+    /**
+     * adds packet to storage if new
+     * 
+     * @param pkt packet
+     * @return true if packet was added, false if packet already in storage
+     */
+    private boolean addToStorageIfPossible(Packet pkt) {
+        int src = pkt.getSourceAddress();
+        Packet[] storage = this.packetsAlreadyReceived.get(src);
+        if (storage == null) {
+            //create storage for packets from this node
+            packetsAlreadyReceived.put(src, new Packet[8]);
+            packetsAlreadyReceived.get(src)[pkt.getSequenceNumber()] = pkt;
+            return true;
+        } else if (storage[pkt.getSequenceNumber()] == null) {
+            //add new packet in recently added storage
+            storage[pkt.getSequenceNumber()] = pkt;
+            return true;
+        } else if (storage[pkt.getSequenceNumber()].equals(pkt)) {
+            //packet already in storage
+            return false;
+        } else {
+            //overwrite storage
+            storage[pkt.getSequenceNumber()] = pkt;
+            return true;
         }
     }
 
@@ -204,16 +227,24 @@ public class TransportLayer {
 
         
         // for each msg create a Packet class
-        int sequenceNumber = 0; //TODO: figure out how to work with sequence numbers (8 slots)
-        //TODO: keep track of last seq
         Packet[] pkts = new Packet[substrings.length];
         for (int i = 0; i < pkts.length; i++) {
             boolean hasNext = (i != pkts.length - 1);
-            pkts[i] = new Packet(this.networkLayer.getUserID(), hasNext, null, sequenceNumber, i, substrings[i]);
-            sequenceNumber++;
+            pkts[i] = new Packet(this.networkLayer.getUserID(), hasNext, null, this.sequenceNumberIndex, i, substrings[i]);
+            this.iterateSequenceNumberindex();
         }
         
         return pkts;
+    }
+
+    /**
+     * iterate the sequence number of packets
+     */
+    private void iterateSequenceNumberindex() {
+        sequenceNumberIndex++;
+        if (sequenceNumberIndex >= 8) {
+            sequenceNumberIndex = 0;
+        }
     }
 
     /**
