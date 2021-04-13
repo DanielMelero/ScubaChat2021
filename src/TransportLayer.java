@@ -260,4 +260,12 @@ public class TransportLayer {
         return (Packet[]) bufferMap.get(sourceAddress).toArray();
     }
 
+    /**
+     * network layer getter
+     * 
+     * @return
+     */
+    public NetworkLayer getNetworkLayer() {
+        return this.networkLayer;
+    }
 }
