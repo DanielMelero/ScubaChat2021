@@ -38,20 +38,20 @@ public class ShortPacket {
             array[i] = buffer.get(i);
         }
 
-        isAck = (array[0] >>> 7) != 0;
+        this.isAck = (array[0] >>> 7) != 0;
 
-        if (isAck) {
+        if (this.isAck) {
             //get sequence number. 127 -> 0111 1111
             this.sequenceNumber = array[0] & 127;
             //get source address. 240 -> 1111 0000
-            this.sourceAddress = array[1] & 240;
+            this.sourceAddress = array[1] >>> 4;
             //get destination address. 15 -> 0000 1111
             this.destinationAddress = array[1] & 15;
         } else {
             //get routing cost. 127 -> 0111 1111
             this.cost = array[0] & 127;
             //get available node address. 240 -> 1111 0000
-            this.availableNode = array[1] & 240;
+            this.availableNode = array[1] >>> 4;
             //get next hop address. 15 -> 0000 1111
             this.nextHop = array[1] & 15;
         }

@@ -6,7 +6,6 @@ import client.*;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -20,15 +19,11 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 
 public class MyProtocol {
-
-	boolean collision = false;
 	boolean free = true;
-	int seq = 0;
-	ShortPacket acknowledment;
-	boolean acked = false;
-	HashMap<ByteBuffer, Timer> timer = new HashMap();
+	Timer timer;
 	private NetworkLayer networkLayer;
 	private static int userID = 0;
+	ArrayList<Message> messageQueue;
 	// The host to connect to. Set this to localhost when using the audio interface
 	// tool.
 	private static String SERVER_IP = "netsys.ewi.utwente.nl"; // "127.0.0.1";
@@ -36,80 +31,54 @@ public class MyProtocol {
 	private static int SERVER_PORT = 8954;
 	// The frequency to use.
 	private static int frequency = 4100;
-	// private Network network;
 
 	private BlockingQueue<Message> receivedQueue;
 	private BlockingQueue<Message> sendingQueue;
-	// ByteBuffer message;
-
-	// String input;
 
 	public MyProtocol(String server_ip, int server_port, int frequency) {
 
 		receivedQueue = new LinkedBlockingQueue<Message>();
 		sendingQueue = new LinkedBlockingQueue<Message>();
 
-		this.networkLayer = new NetworkLayer(this);
+		this.timer = new Timer();
+        this.timer.schedule(new TryToSend(this), 0, 20);
 
-		// this.network = new Network();
+		messageQueue = new ArrayList<>();
+
+		try {
+			this.networkLayer = new NetworkLayer(this, userID);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		new Client(SERVER_IP, SERVER_PORT, frequency, receivedQueue, sendingQueue); // Give the client the Queues to use
 
 		new receiveThread(receivedQueue).start(); // Start thread to handle received messages!
-
-		// handle sending from stdin from this thread.
-
-		// Scanner console = new Scanner(System.in);
-
-		// input = console.nextLine();
-
 	}
 
 	public void send(ByteBuffer input) {
-		this.timer.put(input, new Timer());
-        this.timer.get(input).schedule(new TryToSend(input, this), 0, 100);
-	}
-
-	private void mediumAccessControl(ByteBuffer input) {
 		Message msg;
 		if (input.capacity() == 2) {
 			msg = new Message(MessageType.DATA_SHORT, input);
 		} else  {
 			msg = new Message(MessageType.DATA, input);
 		}
+		messageQueue.add(msg);
+	}
+
+	public void mediumAccessControl() {
 		// Send it at random times due to the ALOHA Protocol
-		if (free) {
-			if (new Random().nextInt(100) < 50) {
+		if (free && !messageQueue.isEmpty()) {
+			if (new Random().nextInt(100) < 40) {
 				try {
-					sendingQueue.put(msg);
-					Timer t = timer.get(input);
-					t.cancel();
-        			t.purge();
-					this.timer.remove(input);
-        			return;
+					//send packet and removeit from queue
+					sendingQueue.put(messageQueue.get(0));
+					messageQueue.remove(0);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-			} else {
-				mediumAccessControl(input);
 			}
-		}
-	}
-
-	class TryToSend extends TimerTask {
-		private ByteBuffer input;
-		private MyProtocol protocol;
-	
-		public TryToSend(ByteBuffer input, MyProtocol protocol) {
-			this.input = input;
-			this.protocol = protocol;
-		}
-	
-		/**
-		 * resend input
-		 */
-		public void run() {
-			protocol.mediumAccessControl(input);
 		}
 	}
 
@@ -128,13 +97,6 @@ public class MyProtocol {
 		public receiveThread(BlockingQueue<Message> receivedQueue) {
 			super();
 			this.receivedQueue = receivedQueue;
-		}
-
-		public void printByteBuffer(ByteBuffer bytes, int bytesLength) {
-			for (int i = 0; i < bytesLength; i++) {
-				System.out.print(Byte.toString(bytes.get(i)) + " ");
-			}
-			System.out.println();
 		}
 
 		// Handle messages from the server / audio framework
@@ -175,5 +137,21 @@ public class MyProtocol {
 				}
 			}
 		}
+	}
+}
+
+class TryToSend extends TimerTask {
+	private MyProtocol protocol;
+
+	public TryToSend(MyProtocol protocol) {
+		this.protocol = protocol;
+	}
+
+	/**
+	 * resend input
+	 */
+	@Override
+	public void run() {
+		this.protocol.mediumAccessControl();
 	}
 }

@@ -110,7 +110,8 @@ public class TransportLayer {
     public void receivedPacket(ByteBuffer buffer) throws Exception {
         int[] array = new int[buffer.capacity()];
         for (int i = 0; i < array.length; i++) {
-            array[i] = buffer.get(i);
+            //bytes to unsigned byte in an integer.
+            array[i] = buffer.get(i) & 0xff;
         }
         receivedPacket(new Packet(array));
     }

@@ -37,26 +37,16 @@ public class Routing {
      */
     public int[] getNeededAcknowledgements() {
         ArrayList<Integer> availableNodes = this.getAvailableNodes();
-        int userID = this.networkLayer.getUserID();
+        int id = this.networkLayer.getUserID();
 
         int[] res;
-        if (!availableNodes.contains(userID)) {
-            // return all available nodes
-            res = new int[availableNodes.size()];
-            for (int i = 0; i < res.length; i++) {
-                res[i] = availableNodes.get(i);
-            }
-            return res;
-        } else {
-            // return all available nodes except itself
-            res = new int[availableNodes.size() - 1];
-            for (int i = 0; i < res.length; i++) {
-                if (availableNodes.get(i) != userID) {
-                    res[i] = availableNodes.get(i);
-                }
-            }
-            return res;
+        // return all available nodes except itself
+        availableNodes.remove((Object)id);
+        res = new int[availableNodes.size()];
+        for (int i = 0; i < res.length; i++) {
+            res[i] = availableNodes.get(i);
         }
+            return res;
     }
 
     /**
@@ -154,6 +144,7 @@ class timeToLiveManager extends TimerTask {
     /**
      * decreases TTL and send full routing table if necessary
      */
+    @Override
     public void run() {
         //decrease time to live of all entries of the routing table
         ArrayList<Route> routingTable = routing.getRoutingTable();

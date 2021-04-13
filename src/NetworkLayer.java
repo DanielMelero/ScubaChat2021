@@ -17,6 +17,7 @@ public class NetworkLayer {
 	private static final int BITS_FOR_ADDRESSES = 4;
 	private static final int TIMEOUT_TIME = 6000;
 
+	private Timer timer;
 	private int userID;
 	//TODO: change this so there is a waiting list in case same seq num
 	private HashMap<Packet, ArrayList<Integer>> ackMap;
@@ -38,6 +39,7 @@ public class NetworkLayer {
 		this.routing = new Routing(this);
 		this.protocol = protocol;
 		this.ackMap = new HashMap<>();
+		this.timer = new Timer();
 	}
 
 	public NetworkLayer(MyProtocol protocol, int userID) throws Exception {
@@ -49,6 +51,7 @@ public class NetworkLayer {
 		this.routing = new Routing(this);
 		this.ackMap = new HashMap<>();
 		this.transportLayer = new TransportLayer(this);
+		this.timer = new Timer();
 	}
 
 	/**
@@ -114,8 +117,7 @@ public class NetworkLayer {
 		}
 
 		//set up a time out
-		Timer timer = new Timer();
-        timer.schedule(new TimeOut(this, timer, pkt), 0, TIMEOUT_TIME);
+        this.timer.schedule(new TimeOut(this, pkt), TIMEOUT_TIME);
 
 		protocol.send(pkt.toByteBuffer());
 	}
@@ -151,12 +153,6 @@ public class NetworkLayer {
 		this.transportLayer.receivedPacket(buffer);
 	}
 
-	public void destroyMe(Timer timeOut) {
-		timeOut.cancel();
-        timeOut.purge();
-        return;
-	}
-
 	public ArrayList<Integer> getAcks(Packet packet) {
 		return this.ackMap.get(packet);
 	}
@@ -180,19 +176,21 @@ public class NetworkLayer {
 class TimeOut extends TimerTask {
     private NetworkLayer networkLayer;
 	private Packet packet;
-	private Timer timer;
 
-    public TimeOut(NetworkLayer networkLayer, Timer timer, Packet packet) {
+    public TimeOut(NetworkLayer networkLayer, Packet packet) {
         this.networkLayer = networkLayer;
 		this.packet = packet;
-		this.timer = timer;
     }
 
     /**
      * check if retransmission is needed
      */
+	@Override
     public void run() {
         ArrayList<Integer> acks = this.networkLayer.getAcks(this.packet);
+
+		debugging(acks, this.networkLayer.getRouting().getNeededAcknowledgements());
+
 		boolean allAcknoledged = true;
 		for(int node : this.networkLayer.getRouting().getNeededAcknowledgements()) {
 			if (!acks.contains(node)) {
@@ -208,6 +206,21 @@ class TimeOut extends TimerTask {
 		}
 
 		//finish task
-		this.networkLayer.destroyMe(this.timer);
+		this.cancel();
     }
+
+	public void debugging(ArrayList<Integer> acks, int[] needed) {
+		System.out.println(this.networkLayer.getUserID());
+		System.out.println("acks length: " + acks.size());
+		for (Integer i:acks) {
+			System.out.println(i+" ");
+		}
+		System.out.println();
+		System.out.println("needed length: " + needed.length);
+		for (Integer i:needed) {
+			System.out.println(i+" ");
+		}
+		System.out.println();
+
+	}
 }
