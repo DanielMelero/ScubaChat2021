@@ -4,8 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.junit.platform.engine.discovery.PackageSelector;
-
 /**
  * Transport Layer transform a given string into packet(s) and transfom given packet(s) into a message
  * 

@@ -15,7 +15,7 @@ import java.util.TimerTask;
 public class NetworkLayer {
 	private static final Random rand = new Random();
 	private static final int BITS_FOR_ADDRESSES = 4;
-	private static final int TIMEOUT_TIME = 6000;
+	private static final int TIMEOUT_TIME = 3000;
 
 	private Timer timer;
 	private int userID;
@@ -189,8 +189,6 @@ class TimeOut extends TimerTask {
     public void run() {
         ArrayList<Integer> acks = this.networkLayer.getAcks(this.packet);
 
-		debugging(acks, this.networkLayer.getRouting().getNeededAcknowledgements());
-
 		boolean allAcknoledged = true;
 		for(int node : this.networkLayer.getRouting().getNeededAcknowledgements()) {
 			if (!acks.contains(node)) {
@@ -205,11 +203,14 @@ class TimeOut extends TimerTask {
 			this.networkLayer.eraseAckMapEntry(this.packet);
 		}
 
+		// debugging(acks, this.networkLayer.getRouting().getNeededAcknowledgements());
+
 		//finish task
 		this.cancel();
     }
 
-	public void debugging(ArrayList<Integer> acks, int[] needed) {
+	/*
+	private void debugging(ArrayList<Integer> acks, int[] needed) {
 		System.out.println(this.networkLayer.getUserID());
 		System.out.println("acks length: " + acks.size());
 		for (Integer i:acks) {
@@ -223,4 +224,5 @@ class TimeOut extends TimerTask {
 		System.out.println();
 
 	}
+	*/
 }
