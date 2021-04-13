@@ -1,23 +1,31 @@
 package src;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 public class BetterUI implements UI, Runnable {
 	
+	// these are used for the menu
 	private static final char MENU = 'm';
 	private static final char COUNT = 'c';
 	private static final char EXIT = 'e';
+	private static final char ORIGINS = 'o';
+	private static final char SET = 's';
 	
-	
+	// instances used in this class
 	private InputHandler ih;
 	private ApplicationLayer al;
 	
+	// variables used to store the conversation
 	private Map<Integer, String> log;
 	private Map<Integer, String> users;
+	private Set<Integer> origins;
 	private int current = 0;
 	
+	// Dynamic variables used to change the behavior of the code depending on condition
 	private boolean inputMode = false;
 	private String lastInput;
 	private boolean gotInput;
@@ -28,17 +36,22 @@ public class BetterUI implements UI, Runnable {
 		log = new HashMap<>();
 		users = new HashMap<>();
 		inputMode = false;
+		origins = new HashSet<>();
 		this.al = al;
 	}
 	public BetterUI() {
 		log = new HashMap<>();
 		users = new HashMap<>();
 		inputMode = false;
+		origins = new HashSet<>();
 		this.al = new ApplicationLayer(this);
 	}
 	
+	/**
+	 * method that starts the input handler as a separate thread
+	 */
 	private void startInputHandler() {
-		InputHandler ih = new InputHandler(this);
+		ih = new InputHandler(this);
 		ih.start();
 	}
 
@@ -51,7 +64,6 @@ public class BetterUI implements UI, Runnable {
 			synchronized (this) {
 				lastInput = input;
 				gotInput = true;
-				notifyAll();
 			}
 			return null;
 		}
@@ -69,6 +81,12 @@ public class BetterUI implements UI, Runnable {
 		} else {
 			origin = Integer.toString(sourceAddress);
 		}
+		
+		// put the address in the origins set for later use
+		if (!origins.contains(sourceAddress)) {
+			origins.add(sourceAddress);
+		}
+		
 		// put the message in a hashmap to later recall it
 		log.put(current, origin + ": " + msg);
 		
@@ -106,33 +124,41 @@ public class BetterUI implements UI, Runnable {
 	 * @param name the name of the user
 	 */
 	public void addUser(int sourceAddress, String name) {
+		if (!users.containsKey(sourceAddress)) {
+			System.out.println("address not known but users name was added");
+		} else {
+			System.out.println("user name added");
+		}
 		users.put(sourceAddress, name);
+		
 	}
 	
 	/**
-	 * method to clear the console
+	 * method to show the nodes that where in the conversation
 	 */
-	private void clearConsole() {
-		try {
-			final String os = System.getProperty("os.name");
-			if (os.contains("Windows")) {
-				Runtime.getRuntime().exec("cls");
+	private synchronized void showOrigins() {
+		for (int i : origins) {
+			if (users.containsKey(i)) {
+				System.out.println(i + ": " + users.get(i));
 			} else {
-				Runtime.getRuntime().exec("clear");
+				System.out.println(i);
 			}
-		} catch (final Exception e) {
-			e.printStackTrace();
 		}
+		
 	}
-	
-	// TODO: make a menu
 	
 	/**
 	 * method to show menu
 	 */
 	private void showMenu() {
 		
-		System.out.println("WIP");
+		System.out.println("Available commands");
+		System.out.println("'m': show menu");
+		System.out.println("'c': show count of all messages");
+		System.out.println("'o': show all addresses of nodes present in the conversation");
+		System.out.println("'e': exit the programm");
+		System.out.println("'s': set names for specific addresses");
+		System.out.println("usage: s [address] [name of node]");
 		
 	}
 	
@@ -149,6 +175,9 @@ public class BetterUI implements UI, Runnable {
 		
 		// print instructions
 		System.out.println("Input mode: \nEnter 'm' for available commands");
+		System.out.println("input message and press Enter or press Enter to exit");
+		
+		a: // break point for exit function
 		while (true) {
 
 			// wait for input
@@ -158,6 +187,7 @@ public class BetterUI implements UI, Runnable {
 				if (!gotInput) {
 					// using a separate scanner as the inputhandler is will be in a dead lock if
 					// wait() is used
+					System.out.print("> ");
 					String input = new Scanner(System.in).nextLine();
 					getInput(input);
 				}
@@ -165,13 +195,28 @@ public class BetterUI implements UI, Runnable {
 
 			// read input
 
-			// break out of input mode when the return ley is pressed
+			// break out of input mode when the return key is pressed
 			if (lastInput.length() == 0) {
 				break;
 			}
 
 			// if menu option is detected
 			// TODO: add more options and make exit work
+			
+			// if SET option is used
+			if (lastInput.charAt(0) == SET && lastInput.length() > 1) {
+				String[] arguments = lastInput.split(" ");
+				// check for enough arguments
+				if (arguments.length == 3 && isNumeric(arguments[1])) {
+					// add user name
+					addUser(Integer.parseInt(arguments[1]), arguments[2]);
+					continue;
+				} else {
+					// give error message
+					System.out.println("unknown command try again");
+					continue;
+				}
+			}
 			
 			if (lastInput.length() == 1) {
 				switch (lastInput.charAt(0)) {
@@ -182,31 +227,30 @@ public class BetterUI implements UI, Runnable {
 				case COUNT:
 					System.out.println("the message count is: " + log.size());
 					break;
-				case EXIT: // not working
+				case EXIT:
 					exit = true;
+					System.out.println("exiting program...\nall messages that came will be displayed");
+					break a;
+				case ORIGINS:
+					showOrigins();
 					break;
 				default:
-					System.out.println("try again");
+					System.out.println("unknown command try again");
 					break;
 				}
 			} else {
 				// else send text to application layer
 				boolean error = false;
-				while (true) {
-					
-					try {
-						al.sendMessage(lastInput);
-						break;
-					} catch (Exception e) {
-						System.out.println("Error:" + e.getMessage());
-						error = true;
-						break;
-					}
+				try {
+					al.sendMessage(lastInput);
+				} catch (Exception e) {
+					System.out.println("Error:" + e.getMessage());
+					error = true;
 				}
-				if(error) {
+				if (error) {
 					continue;
 				}
-				
+
 				System.out.println("message sent");
 				break;
 			}
@@ -215,12 +259,35 @@ public class BetterUI implements UI, Runnable {
 		// display all messages that came during the input mode
 		displayMissedMessage();
 		inputMode = false;
+		
+		// exit program
+		if (exit) {
+			ih.end();
+		}
+	}
+	
+	/**
+	 * method that check if the input is numeric
+	 * @param str string that is being checked
+	 * @return true if it is, false if it isn't
+	 */
+	private boolean isNumeric(String str) {
+		if (str == null) {
+			return false;
+		}
+		try {
+			int i = Integer.parseInt(str);
+		} catch (Exception e) {
+			return false;
+		}
+		return true;
 	}
 
 
 	@Override
 	public void run() {
-		
+		System.out.println("Welcome to ScubChat!\nPress \"Enter\" to change to input mode.");
+		showMenu();
 		startInputHandler();
 	}
 	
@@ -229,6 +296,11 @@ public class BetterUI implements UI, Runnable {
 		BetterUI ui = new BetterUI();
 		Thread t = new Thread(ui);
 		t.start();
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			System.out.println("Error:" + e.getMessage());
+		}
 		for (int i = 0; i < 100; i++) {
 			try {
 				Thread.sleep(100);
