@@ -70,7 +70,7 @@ public class MyProtocol {
 	public void mediumAccessControl() {
 		// Send it at random times due to the ALOHA Protocol
 		if (free && !messageQueue.isEmpty()) {
-			if (new Random().nextInt(100) < 40) {
+			if (new Random().nextInt(100) < 25) {
 				try {
 					//send packet and removeit from queue
 					sendingQueue.put(messageQueue.get(0));

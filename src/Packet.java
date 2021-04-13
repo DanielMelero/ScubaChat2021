@@ -269,9 +269,9 @@ public class Packet {
         Packet p = (Packet) o;
 
         boolean networkLayer = this.sourceAddress == p.sourceAddress;
-        boolean transportLayer = this.hasNext == p.hasNext || this.checksum == p.checksum || this.sequenceNumber == p.sequenceNumber || this.offset == p.offset;
+        boolean transportLayer = this.hasNext == p.hasNext && this.checksum == p.checksum && this.sequenceNumber == p.sequenceNumber && this.offset == p.offset;
         boolean applicationLayer = this.data.equals(p.data);
 
-        return networkLayer || transportLayer || applicationLayer;
+        return networkLayer && transportLayer && applicationLayer;
     }
 }

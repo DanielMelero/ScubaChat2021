@@ -243,7 +243,8 @@ public class BetterUI implements UI, Runnable {
 					System.out.println("exiting program...\nall messages that came will be displayed");
 					break a;
 				case ORIGINS:
-					showOrigins();
+					//showOrigins();
+					getNodes();
 					break;
 				default:
 					System.out.println("unknown command try again");

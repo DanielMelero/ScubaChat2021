@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.junit.platform.engine.discovery.PackageSelector;
+
 /**
  * Transport Layer transform a given string into packet(s) and transfom given packet(s) into a message
  * 
@@ -21,6 +23,8 @@ public class TransportLayer {
 
     private HashMap<Integer, ArrayList<Packet>> bufferMap = new HashMap<>();
     private HashMap<Integer, Packet> waitingForMissingPackets = new HashMap<>();
+
+    private HashMap<Integer, ArrayList<Packet>> packetsAlreadyReceived = new HashMap<>();;
 
     /**
      * Create Transport Layer instance with a given Application Layer
@@ -51,7 +55,23 @@ public class TransportLayer {
      */
     public void receivedPacket(Packet pkt) {
         int src = pkt.getSourceAddress();
+
+        //always send ack when receiving packet
         this.sendAcknowledgment(src, pkt.getSequenceNumber());
+
+        ArrayList<Packet> storage = packetsAlreadyReceived.get(src);
+        if (storage == null) {
+            //create storage for packets from this node
+            packetsAlreadyReceived.put(src, new ArrayList<>());
+            packetsAlreadyReceived.get(src).add(pkt);
+        } else if (storage.contains(pkt)) {
+            //packet have already been received so return
+            return;
+        } else {
+            //add new packet to the storage
+            storage.add(pkt);
+        }
+
         if (pkt.getHasNext()) {
             //packet indicate that more packets are following
             if(!bufferMap.containsKey(src)){
